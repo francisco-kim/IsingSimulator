@@ -1,24 +1,26 @@
 ﻿using IsingMonteCarlo.Helpers;
 using IsingMonteCarlo.Services;
 
-var isSingleRun = false;
+var isSingleRun = true;
 
 var dimension = 2;
 var latticeLength = 100;
 
-var monteCarlo = new MonteCarloSimulation(dimension, latticeLength);
+var totalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));
+
+var initialSpinDownRatio = 0.25;
+var initialSpinConfiguration = SpinConfigurationBuilder.InitialiseLattice(totalSpinsCount,
+                                                                          initialSpinDownRatio,
+                                                                          randomSeed: 17);
+var monteCarlo = new MonteCarloSimulation(dimension, latticeLength, initialSpinConfiguration);
 
 // var boltzmannTemperature = 2.269;
-var boltzmannTemperature = 2.5;
+var boltzmannTemperature = 1.8;
 var beta = 1.0 / boltzmannTemperature;
 var j = -1.0;
 var h = 0.0;
 var iterationLimit = monteCarlo.TotalSpinsCount * 1000;
 var spinUpdateMethod = IsingMonteCarlo.Models.SpinUpdateMethod.Glauber;
-var initialSpinDownRatio = 0.25;
-var initialSpinConfiguration = SpinConfigurationBuilder.InitialiseLattice(monteCarlo.TotalSpinsCount,
-                                                                          initialSpinDownRatio,
-                                                                          randomSeed: 17);
 
 if (isSingleRun)
 {
@@ -27,10 +29,10 @@ if (isSingleRun)
                              h,
                              iterationLimit,
                              spinUpdateMethod,
-                             initialSpinConfiguration,
                              randomSeed: 17);
 
-    var averageMagnetisation = monteCarlo.GetAverageMagnetisation();
+    var hamiltonian = new IsingHamiltonian(monteCarlo.Lattice);
+    var averageMagnetisation = hamiltonian.GetAverageMagnetisation(j, h);
 
     Console.WriteLine($"The average magnetisation: {averageMagnetisation}\n");
 }
@@ -60,11 +62,10 @@ else
                                  h,
                                  iterationLimit,
                                  spinUpdateMethod,
-                                 initialSpinConfiguration,
                                  randomSeed: 17);
 
         Console.WriteLine($"Iteration {iterationIndex} completed.");
 
-        return monteCarlo.GetAverageMagnetisation();
+        return new IsingHamiltonian(monteCarlo.Lattice).GetAverageMagnetisation(j, h);
     }
 }

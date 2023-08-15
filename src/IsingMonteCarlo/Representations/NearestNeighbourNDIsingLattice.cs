@@ -9,7 +9,8 @@ public sealed class NearestNeighbourNDIsingLattice
 
     internal NearestNeighbourNDIsingLattice(
         int dimension,
-        int latticeLength)
+        int latticeLength,
+        IEnumerable<int>? initialSpinConfiguration = null)
     {
         if (dimension < 1)
         {
@@ -27,6 +28,23 @@ public sealed class NearestNeighbourNDIsingLattice
 
         TotalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));
 
+        var initialSpins = initialSpinConfiguration is not null ?
+                    initialSpinConfiguration.ToList() :
+                    Enumerable.Repeat(1, TotalSpinsCount).ToList();
+
+        if (initialSpins.Count != TotalSpinsCount)
+        {
+            throw new ArgumentException(
+                $"There must be (lattice length)^(dimension) spins, but {initialSpins.Count} spins were given.",
+                nameof(initialSpinConfiguration));
+        }
+
+        if (initialSpins.Any(spin  => (spin != 1) && (spin != -1)))
+        {
+            throw new ArgumentException(
+                $"The spins must have integer values +1 or -1.",
+                nameof(initialSpinConfiguration));
+        }
 
         Dimension = dimension;
         LatticeLength = latticeLength;
@@ -40,6 +58,7 @@ public sealed class NearestNeighbourNDIsingLattice
 
         SpatialVectors = Enumerable.Range(0, TotalSpinsCount).Select(SpinIndexToSpatialVector).ToList();
         NeighboursIndices = Enumerable.Range(0, TotalSpinsCount).Select(FindNeighboursOfSpin).ToList();
+        Spins = initialSpins;
     }
 
     public int Dimension { get; }
@@ -47,6 +66,8 @@ public sealed class NearestNeighbourNDIsingLattice
     public int LatticeLength { get; }
 
     public int TotalSpinsCount { get; }
+
+    public List<int> Spins { get; set; }
 
     public List<List<int>> SpatialVectors { get; }
 
