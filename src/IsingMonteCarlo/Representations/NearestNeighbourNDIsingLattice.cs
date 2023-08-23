@@ -1,6 +1,8 @@
+using System.Numerics;
+
 namespace IsingMonteCarlo.Representations;
 
-public sealed class NearestNeighbourNDIsingLattice
+public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
 {
     private const int LatticeSizeLowerBound = 3;
 
@@ -10,7 +12,7 @@ public sealed class NearestNeighbourNDIsingLattice
     internal NearestNeighbourNDIsingLattice(
         int dimension,
         int latticeLength,
-        IEnumerable<int>? initialSpinConfiguration = null)
+        IEnumerable<T>? initialSpinConfiguration = null)
     {
         if (dimension < 1)
         {
@@ -30,7 +32,7 @@ public sealed class NearestNeighbourNDIsingLattice
 
         var initialSpins = initialSpinConfiguration is not null ?
                     initialSpinConfiguration.ToList() :
-                    Enumerable.Repeat(1, TotalSpinsCount).ToList();
+                    Enumerable.Repeat(T.MultiplicativeIdentity, TotalSpinsCount).ToList();
 
         if (initialSpins.Count != TotalSpinsCount)
         {
@@ -39,7 +41,8 @@ public sealed class NearestNeighbourNDIsingLattice
                 nameof(initialSpinConfiguration));
         }
 
-        if (initialSpins.Any(spin  => (spin != 1) && (spin != -1)))
+        if (initialSpins.Any(spin  => (spin != T.MultiplicativeIdentity)
+                                      && (spin != -T.MultiplicativeIdentity)))
         {
             throw new ArgumentException(
                 $"The spins must have integer values +1 or -1.",
@@ -67,7 +70,7 @@ public sealed class NearestNeighbourNDIsingLattice
 
     public int TotalSpinsCount { get; }
 
-    public List<int> Spins { get; set; }
+    public List<T> Spins { get; set; }
 
     public List<List<int>> SpatialVectors { get; }
 

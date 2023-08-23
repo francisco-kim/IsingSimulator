@@ -3,18 +3,18 @@ using IsingMonteCarlo.Representations;
 
 namespace IsingMonteCarlo.Services;
 
-public sealed class MonteCarloSimulation
+public sealed class IsingMonteCarloSimulation
 {
     private const int LatticeSizeLowerBound = 3;
 
     private readonly List<List<int>> _neighboursIndices;
-    private readonly IsingHamiltonian _hamiltonian;
+    private readonly IHamiltonian<int> _hamiltonian;
     private double _beta;
     private double _j;
     private double _h;
     private double? _jY;
 
-    public MonteCarloSimulation(
+    public IsingMonteCarloSimulation(
         int dimension,
         int latticeLength,
         IEnumerable<int>? initialSpinConfiguration = null)
@@ -55,7 +55,7 @@ public sealed class MonteCarloSimulation
 
         Dimension = dimension;
         LatticeLength = latticeLength;
-        Lattice = new NearestNeighbourNDIsingLattice(dimension, latticeLength, initialSpins);
+        Lattice = new NearestNeighbourNDIsingLattice<int>(dimension, latticeLength, initialSpins);
 
         _hamiltonian = new IsingHamiltonian(Lattice);
         _neighboursIndices = Lattice.NeighboursIndices;
@@ -68,7 +68,7 @@ public sealed class MonteCarloSimulation
 
     public int TotalSpinsCount { get; }
 
-    public NearestNeighbourNDIsingLattice Lattice { get; }
+    public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
     public List<List<int>> SpatialVectors { get; }
 
@@ -127,12 +127,10 @@ public sealed class MonteCarloSimulation
 
             if (flip)
             {
-                FlipSpin(chosenSite);
+                _hamiltonian.FlipSpin(chosenSite);
             }
         }
     }
-
-    internal double FlipSpin(int spinIndex) => Lattice.Spins[spinIndex] = -Lattice.Spins[spinIndex];
 
     private bool FlipWithMetropolis(double randomProbability, int siteIndex)
     {
@@ -146,5 +144,8 @@ public sealed class MonteCarloSimulation
                <= 1 / (1 + Math.Exp(_beta * _hamiltonian.GetDeltaEnergyOfSite(siteIndex, _j, _h, _jY)));
     }
 
-    private bool FlipClusterWithWolff(double randomProbability, int siteIndex) => throw new NotImplementedException();
+    private bool FlipSpinWithWolff(double randomProbability, int siteIndex)
+    {
+        throw new NotImplementedException();
+    }
 }

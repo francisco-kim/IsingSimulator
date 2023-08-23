@@ -1,15 +1,14 @@
-using IsingMonteCarlo.Models;
-using IsingMonteCarlo.Representations;
+using IsingMonteCarlo.Services;
 
-namespace IsingMonteCarlo.Services;
+namespace IsingMonteCarlo.Representations;
 
-public sealed class IsingHamiltonian
+public sealed class IsingHamiltonian : IHamiltonian<int>
 {
     private readonly List<List<int>> _neighboursIndices;
     private readonly int _dimension;
     private readonly int _totalSpinsCount;
 
-    public IsingHamiltonian(NearestNeighbourNDIsingLattice lattice)
+    public IsingHamiltonian(NearestNeighbourNDIsingLattice<int> lattice)
     {
         if (lattice is null)
         {
@@ -22,17 +21,17 @@ public sealed class IsingHamiltonian
         _totalSpinsCount = lattice.TotalSpinsCount;
     }
 
-    public NearestNeighbourNDIsingLattice Lattice { get; }
+    public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
     public double GetTotalEnergy(
         double j,
         double h,
-        double? jY = null)
-    {
-        return 0.5 * Enumerable.Range(0, _totalSpinsCount)
-                               .Select(i => GetEnergyOfSite(i, j, h, jY))
-                               .Sum();
-    }
+        double? jY = null) =>
+        0.5 * Enumerable.Range(0, _totalSpinsCount)
+                        .Select(i => GetEnergyOfSite(i, j, h, jY))
+                        .Sum();
+
+    public void FlipSpin(int spinIndex) => Lattice.Spins[spinIndex] *= -1;
 
     /// <summary>
     ///     Calculates the average energy per site.

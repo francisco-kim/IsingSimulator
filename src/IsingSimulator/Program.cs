@@ -1,4 +1,5 @@
 ﻿using IsingMonteCarlo.Helpers;
+using IsingMonteCarlo.Representations;
 using IsingMonteCarlo.Services;
 
 var isSingleRun = true;
@@ -12,7 +13,7 @@ var initialSpinDownRatio = 0.25;
 var initialSpinConfiguration = SpinConfigurationBuilder.InitialiseLattice(totalSpinsCount,
                                                                           initialSpinDownRatio,
                                                                           randomSeed: 17);
-var monteCarlo = new MonteCarloSimulation(dimension, latticeLength, initialSpinConfiguration);
+var monteCarlo = new IsingMonteCarloSimulation(dimension, latticeLength, initialSpinConfiguration);
 
 // var boltzmannTemperature = 2.269;
 var boltzmannTemperature = 1.8;
