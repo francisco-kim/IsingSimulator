@@ -33,8 +33,7 @@ if (isSingleRun)
                              spinUpdateMethod,
                              randomSeed: 17);
 
-    var hamiltonian = new IsingHamiltonian(monteCarlo.Lattice);
-    var averageMagnetisation = hamiltonian.GetAverageMagnetisation(j, h);
+    var averageMagnetisation = monteCarlo.Hamiltonian.GetAverageMagnetisation(j, h);
 
     Console.WriteLine($"The average magnetisation: {averageMagnetisation}\n");
 }

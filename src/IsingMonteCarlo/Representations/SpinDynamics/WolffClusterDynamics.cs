@@ -33,7 +33,7 @@ public class WolffClusterDynamics : ISpinDynamics
             _clusterQueue.Enqueue(chosenSite);
 
             // Flip reference spin of the cluster
-            _hamiltonian.FlipSpin(chosenSite);
+            _hamiltonian.FlipSpinWithEnergyUpdate(chosenSite, j, h, jY);
         }
 
         var siteIndexToConsider = _clusterQueue.Dequeue();
@@ -52,7 +52,7 @@ public class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
-                    _hamiltonian.FlipSpin(neighbour);
+                    _hamiltonian.FlipSpinWithEnergyUpdate(neighbour, j, h, jY);
                 }
             }
         }
@@ -73,7 +73,7 @@ public class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
-                    _hamiltonian.FlipSpin(neighbour);
+                    _hamiltonian.FlipSpinWithEnergyUpdate(neighbour, j, h, jY);
                 }
             }
 

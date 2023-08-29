@@ -26,7 +26,7 @@ public class GlauberDynamics : ISpinDynamics
 
         if (flip)
         {
-            _hamiltonian.FlipSpin(chosenSite);
+            _hamiltonian.FlipSpinWithEnergyUpdate(chosenSite, j, h, jY);
         }
     }
 

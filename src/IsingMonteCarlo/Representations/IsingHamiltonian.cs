@@ -19,19 +19,46 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
         _dimension = lattice.Dimension;
         _neighboursIndices = lattice.NeighboursIndices;
         _totalSpinsCount = lattice.TotalSpinsCount;
+        TotalEnergy = double.NaN;
     }
 
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
+    public double TotalEnergy { get; set; }
+
     public double GetTotalEnergy(
         double j,
         double h,
-        double? jY = null) =>
-        0.5 * Enumerable.Range(0, _totalSpinsCount)
+        double? jY = null)
+    {
+        var totalEnergy = 0.5 * Enumerable.Range(0, _totalSpinsCount)
                         .Select(i => GetEnergyOfSite(i, j, h, jY))
                         .Sum();
 
+        if (TotalEnergy is double.NaN)
+        {
+            TotalEnergy = totalEnergy;
+        }
+
+        return totalEnergy;
+    }
+
     public void FlipSpin(int spinIndex) => Lattice.Spins[spinIndex] *= -1;
+
+    public void FlipSpinWithEnergyUpdate(
+        int spinIndex,
+        double j,
+        double h,
+        double? jY = null)
+    {
+        if (TotalEnergy is double.NaN)
+        {
+            TotalEnergy = GetTotalEnergy(j, h, jY);
+        }
+
+        TotalEnergy += GetDeltaEnergyOfSite(spinIndex, j, h, jY);
+        Lattice.Spins[spinIndex] *= -1;
+    }
 
     /// <summary>
     ///     Calculates the average energy per site.

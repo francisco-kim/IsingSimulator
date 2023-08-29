@@ -11,7 +11,6 @@ public sealed class IsingMonteCarloSimulation
     private const int LatticeSizeLowerBound = 3;
 
     private readonly List<List<int>> _neighboursIndices;
-    private readonly IHamiltonian<int> _hamiltonian;
 
     public IsingMonteCarloSimulation(
         int dimension,
@@ -56,7 +55,7 @@ public sealed class IsingMonteCarloSimulation
         LatticeLength = latticeLength;
         Lattice = new NearestNeighbourNDIsingLattice<int>(dimension, latticeLength, initialSpins);
 
-        _hamiltonian = new IsingHamiltonian(Lattice);
+        Hamiltonian = new IsingHamiltonian(Lattice);
         _neighboursIndices = Lattice.NeighboursIndices;
         SpatialVectors = Lattice.SpatialVectors;
     }
@@ -70,6 +69,8 @@ public sealed class IsingMonteCarloSimulation
     public int TotalEnergy { get; set; }
 
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
+
+    public IHamiltonian<int> Hamiltonian { get; }
 
     public List<List<int>> SpatialVectors { get; }
 
@@ -99,10 +100,10 @@ public sealed class IsingMonteCarloSimulation
 
         ISpinDynamics spinDynamics = spinUpdateMethod switch
         {
-            SpinUpdateMethod.Metropolis => new MetropolisDynamics(_hamiltonian, randomSeed),
-            SpinUpdateMethod.Glauber => new GlauberDynamics(_hamiltonian, randomSeed),
-            SpinUpdateMethod.Wolff => new WolffClusterDynamics(_hamiltonian, randomSeed),
-            _ => new GlauberDynamics(_hamiltonian, randomSeed)
+            SpinUpdateMethod.Metropolis => new MetropolisDynamics(Hamiltonian, randomSeed),
+            SpinUpdateMethod.Glauber => new GlauberDynamics(Hamiltonian, randomSeed),
+            SpinUpdateMethod.Wolff => new WolffClusterDynamics(Hamiltonian, randomSeed),
+            _ => new GlauberDynamics(Hamiltonian, randomSeed)
         };
 
         if (iterationLimit is null)

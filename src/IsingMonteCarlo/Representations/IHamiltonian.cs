@@ -8,12 +8,20 @@ public interface IHamiltonian<T> where T : INumber<T>
 {
     NearestNeighbourNDIsingLattice<T> Lattice { get; }
 
+    double TotalEnergy { get; set; }
+
     double GetTotalEnergy(
         double j,
         double h,
         double? jY = null);
 
     void FlipSpin(int spinIndex);
+
+    public void FlipSpinWithEnergyUpdate(
+        int spinIndex,
+        double j,
+        double h,
+        double? jY = null);
 
     /// <summary>
     ///     Calculates the average energy per site.
