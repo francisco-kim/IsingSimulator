@@ -1,5 +1,8 @@
-﻿using IsingMonteCarlo.Models;
+﻿using System.ComponentModel;
+
+using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Representations;
+using IsingMonteCarlo.Representations.SpinDynamics;
 
 namespace IsingMonteCarlo.Services;
 
@@ -9,10 +12,6 @@ public sealed class IsingMonteCarloSimulation
 
     private readonly List<List<int>> _neighboursIndices;
     private readonly IHamiltonian<int> _hamiltonian;
-    private double _beta;
-    private double _j;
-    private double _h;
-    private double? _jY;
 
     public IsingMonteCarloSimulation(
         int dimension,
@@ -35,9 +34,9 @@ public sealed class IsingMonteCarloSimulation
 
         TotalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));
 
-        var initialSpins = initialSpinConfiguration is not null ?
-                    initialSpinConfiguration.ToList() :
-                    Enumerable.Repeat(1, TotalSpinsCount).ToList();
+        var initialSpins = initialSpinConfiguration is not null
+                               ? initialSpinConfiguration.ToList()
+                               : Enumerable.Repeat(element: 1, TotalSpinsCount).ToList();
 
         if (initialSpins.Count != TotalSpinsCount)
         {
@@ -46,10 +45,10 @@ public sealed class IsingMonteCarloSimulation
                 nameof(initialSpinConfiguration));
         }
 
-        if (initialSpins.Any(spin  => (spin != 1) && (spin != -1)))
+        if (initialSpins.Any(spin => spin != 1 && spin != -1))
         {
             throw new ArgumentException(
-                $"The spins must have integer values +1 or -1.",
+                message: "The spins must have integer values +1 or -1.",
                 nameof(initialSpinConfiguration));
         }
 
@@ -68,6 +67,8 @@ public sealed class IsingMonteCarloSimulation
 
     public int TotalSpinsCount { get; }
 
+    public int TotalEnergy { get; set; }
+
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
     public List<List<int>> SpatialVectors { get; }
@@ -84,68 +85,39 @@ public sealed class IsingMonteCarloSimulation
         if (jY is not null && Dimension != 2)
         {
             throw new ArgumentException(
-                "The coupling constant $J_{Y}$ is valid only in the 2D Ising model.",
+                message: "The coupling constant $J_{Y}$ is valid only in the 2D Ising model.",
                 nameof(jY));
         }
 
-        _beta = beta;
-        _j = j;
-        _h = h;
-        _jY = jY;
+        if (!Enum.IsDefined(typeof(SpinUpdateMethod), spinUpdateMethod))
+        {
+            throw new InvalidEnumArgumentException(
+                nameof(spinUpdateMethod),
+                (int)spinUpdateMethod,
+                typeof(SpinUpdateMethod));
+        }
 
-        var random = randomSeed is not null ? new Random((int)randomSeed) : new Random();
-        // bool flip = false;
-        // switch (spinUpdateMethod)
-        // {
-        //     case SpinUpdateMethod.Metropolis:
-        //     case SpinUpdateMethod.Glauber:
-        //     case SpinUpdateMethod.Wolff:
-        // }
+        ISpinDynamics spinDynamics = spinUpdateMethod switch
+        {
+            SpinUpdateMethod.Metropolis => new MetropolisDynamics(_hamiltonian, randomSeed),
+            SpinUpdateMethod.Glauber => new GlauberDynamics(_hamiltonian, randomSeed),
+            SpinUpdateMethod.Wolff => new WolffClusterDynamics(_hamiltonian, randomSeed),
+            _ => new GlauberDynamics(_hamiltonian, randomSeed)
+        };
 
         if (iterationLimit is null)
         {
             while (true)
             {
-                flipSpinWithChosenUpdateMethod();
+                spinDynamics.FlipSpin(beta, j, h, jY);
             }
         }
-        else
+
+        var iterationCount = 0;
+        while (iterationCount < iterationLimit)
         {
-            int iterationCount = 0;
-            while (iterationCount < iterationLimit)
-            {
-                flipSpinWithChosenUpdateMethod();
-                ++iterationCount;
-            }
+            spinDynamics.FlipSpin(beta, j, h, jY);
+            ++iterationCount;
         }
-
-        void flipSpinWithChosenUpdateMethod()
-        {
-            var chosenSite = random.Next(0, TotalSpinsCount);
-            var flip = FlipWithGlauber(randomProbability: random.NextDouble(), chosenSite);
-            // var flip = FlipWithMetropolis(randomProbability: random.NextDouble(), chosenSite);
-
-            if (flip)
-            {
-                _hamiltonian.FlipSpin(chosenSite);
-            }
-        }
-    }
-
-    private bool FlipWithMetropolis(double randomProbability, int siteIndex)
-    {
-        return randomProbability
-               <= Math.Min(1, Math.Exp(-_beta * _hamiltonian.GetDeltaEnergyOfSite(siteIndex, _j, _h, _jY)));
-    }
-
-    private bool FlipWithGlauber(double randomProbability, int siteIndex)
-    {
-        return randomProbability
-               <= 1 / (1 + Math.Exp(_beta * _hamiltonian.GetDeltaEnergyOfSite(siteIndex, _j, _h, _jY)));
-    }
-
-    private bool FlipSpinWithWolff(double randomProbability, int siteIndex)
-    {
-        throw new NotImplementedException();
     }
 }

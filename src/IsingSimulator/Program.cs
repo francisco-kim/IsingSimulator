@@ -1,4 +1,5 @@
 ﻿using IsingMonteCarlo.Helpers;
+using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Representations;
 using IsingMonteCarlo.Services;
 
@@ -21,7 +22,7 @@ var beta = 1.0 / boltzmannTemperature;
 var j = -1.0;
 var h = 0.0;
 var iterationLimit = monteCarlo.TotalSpinsCount * 1000;
-var spinUpdateMethod = IsingMonteCarlo.Models.SpinUpdateMethod.Glauber;
+var spinUpdateMethod = SpinUpdateMethod.Wolff;
 
 if (isSingleRun)
 {

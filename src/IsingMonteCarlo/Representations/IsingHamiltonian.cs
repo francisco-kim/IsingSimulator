@@ -84,12 +84,12 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
                                                                 * Lattice.Spins[neighbourIndex])
                                                             .Sum();
             
-            return xBonds + (double)yBonds + h * spinValue;
+            return xBonds + (double)yBonds - h * spinValue;
         }
 
         return j * _neighboursIndices[spinIndex].Select(neighbourIndex => Lattice.Spins[neighbourIndex]
                                                                           * spinValue)
                                                 .Sum()
-               + h * spinValue;
+               - h * spinValue;
     }
 }
