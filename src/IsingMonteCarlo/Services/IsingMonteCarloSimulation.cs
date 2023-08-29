@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-using IsingMonteCarlo.Models;
+﻿using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Representations;
 using IsingMonteCarlo.Representations.SpinDynamics;
 
@@ -11,6 +9,8 @@ public sealed class IsingMonteCarloSimulation
     private const int LatticeSizeLowerBound = 3;
 
     private readonly List<List<int>> _neighboursIndices;
+    private SpinUpdateMethod _spinUpdateMethod;
+    private ISpinDynamics _spinDynamics;
 
     public IsingMonteCarloSimulation(
         int dimension,
@@ -58,6 +58,9 @@ public sealed class IsingMonteCarloSimulation
         Hamiltonian = new IsingHamiltonian(Lattice);
         _neighboursIndices = Lattice.NeighboursIndices;
         SpatialVectors = Lattice.SpatialVectors;
+
+        _spinUpdateMethod = SpinUpdateMethod.None;
+        _spinDynamics = new GlauberDynamics(Hamiltonian);
     }
 
     public int Dimension { get; }
@@ -86,38 +89,39 @@ public sealed class IsingMonteCarloSimulation
         if (jY is not null && Dimension != 2)
         {
             throw new ArgumentException(
-                message: "The coupling constant $J_{Y}$ is valid only in the 2D Ising model.",
+                "The coupling constant $J_{Y}$ is valid only in the 2D Ising model.",
                 nameof(jY));
         }
 
-        if (!Enum.IsDefined(typeof(SpinUpdateMethod), spinUpdateMethod))
+        if (h is not 0.0 && spinUpdateMethod is SpinUpdateMethod.Wolff)
         {
-            throw new InvalidEnumArgumentException(
-                nameof(spinUpdateMethod),
-                (int)spinUpdateMethod,
-                typeof(SpinUpdateMethod));
+            throw new ArgumentException("The Wolff single-cluster algorithm is not allowed "
+                + $"if the extrnal field is present ({nameof(h)} = {h} here).", nameof(h));
         }
 
-        ISpinDynamics spinDynamics = spinUpdateMethod switch
+        if (spinUpdateMethod != _spinUpdateMethod)
         {
-            SpinUpdateMethod.Metropolis => new MetropolisDynamics(Hamiltonian, randomSeed),
-            SpinUpdateMethod.Glauber => new GlauberDynamics(Hamiltonian, randomSeed),
-            SpinUpdateMethod.Wolff => new WolffClusterDynamics(Hamiltonian, randomSeed),
-            _ => new GlauberDynamics(Hamiltonian, randomSeed)
-        };
+            _spinDynamics = spinUpdateMethod switch
+            {
+                SpinUpdateMethod.Metropolis => new MetropolisDynamics(Hamiltonian, randomSeed),
+                SpinUpdateMethod.Glauber => new GlauberDynamics(Hamiltonian, randomSeed),
+                SpinUpdateMethod.Wolff => new WolffClusterDynamics(Hamiltonian, randomSeed),
+                _ => new GlauberDynamics(Hamiltonian, randomSeed)
+            };
+        }
 
         if (iterationLimit is null)
         {
             while (true)
             {
-                spinDynamics.FlipSpin(beta, j, h, jY);
+                _spinDynamics.FlipSpin(beta, j, h, jY);
             }
         }
 
         var iterationCount = 0;
         while (iterationCount < iterationLimit)
         {
-            spinDynamics.FlipSpin(beta, j, h, jY);
+            _spinDynamics.FlipSpin(beta, j, h, jY);
             ++iterationCount;
         }
     }

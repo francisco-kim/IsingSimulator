@@ -22,7 +22,7 @@ var beta = 1.0 / boltzmannTemperature;
 var j = -1.0;
 var h = 0.0;
 var iterationLimit = monteCarlo.TotalSpinsCount * 1000;
-var spinUpdateMethod = SpinUpdateMethod.Wolff;
+var spinUpdateMethod = SpinUpdateMethod.Glauber;
 
 if (isSingleRun)
 {

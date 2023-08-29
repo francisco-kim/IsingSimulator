@@ -25,6 +25,11 @@ public class WolffClusterDynamics : ISpinDynamics
         double h,
         double? jY)
     {
+        if (h is not 0.0)
+        {
+            throw new ArgumentException("The Wolff single-cluster algorithm is not allowed "
+                + $"if the extrnal field is present ({nameof(h)} = {h} here).", nameof(h));
+        }
         // If a cluster has not been chosen yet
         if (_clusterQueue.Count is 0)
         {
