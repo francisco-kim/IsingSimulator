@@ -30,9 +30,9 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
 
         TotalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));
 
-        var initialSpins = initialSpinConfiguration is not null ?
-                    initialSpinConfiguration.ToList() :
-                    Enumerable.Repeat(T.MultiplicativeIdentity, TotalSpinsCount).ToList();
+        var initialSpins = initialSpinConfiguration is not null
+                               ? initialSpinConfiguration.ToList()
+                               : Enumerable.Repeat(T.MultiplicativeIdentity, TotalSpinsCount).ToList();
 
         if (initialSpins.Count != TotalSpinsCount)
         {
@@ -41,26 +41,27 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
                 nameof(initialSpinConfiguration));
         }
 
-        if (initialSpins.Any(spin  => (spin != T.MultiplicativeIdentity)
-                                      && (spin != -T.MultiplicativeIdentity)))
+        if (initialSpins.Any(
+                spin => spin != T.MultiplicativeIdentity
+                     && spin != -T.MultiplicativeIdentity))
         {
             throw new ArgumentException(
-                $"The spins must have integer values +1 or -1.",
+                "The spins must have integer values +1 or -1.",
                 nameof(initialSpinConfiguration));
         }
 
         Dimension = dimension;
         LatticeLength = latticeLength;
 
-        _dNaryDigits = Enumerable.Range(0, Dimension)
+        _dNaryDigits = Enumerable.Range(start: 0, Dimension)
                                  .Select(d => Convert.ToInt32(Math.Pow(LatticeLength, Dimension - d - 1)))
                                  .ToList();
-        _decimalValuePerDNaryDigit = Enumerable.Range(0, Dimension)
+        _decimalValuePerDNaryDigit = Enumerable.Range(start: 0, Dimension)
                                                .Select(d => Convert.ToInt32(Math.Pow(LatticeLength, d)))
                                                .ToList();
 
-        SpatialVectors = Enumerable.Range(0, TotalSpinsCount).Select(SpinIndexToSpatialVector).ToList();
-        NeighboursIndices = Enumerable.Range(0, TotalSpinsCount).Select(FindNeighboursOfSpin).ToList();
+        SpatialVectors = Enumerable.Range(start: 0, TotalSpinsCount).Select(SpinIndexToSpatialVector).ToList();
+        NeighboursIndices = Enumerable.Range(start: 0, TotalSpinsCount).Select(FindNeighboursOfSpin).ToList();
         Spins = initialSpins;
     }
 
@@ -81,8 +82,9 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
     {
         if (spinIndex < 0 || spinIndex >= TotalSpinsCount)
         {
-            throw new ArgumentOutOfRangeException(nameof(spinIndex),
-                                                  "The spin index is not in the correct range.");
+            throw new ArgumentOutOfRangeException(
+                nameof(spinIndex),
+                "The spin index is not in the correct range.");
         }
 
         return SpinIndexToSpatialVector(spinIndex);
@@ -90,12 +92,13 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
 
     public int SpatialPositionToSpinIndex(IEnumerable<int> spatialPositionVector)
     {
-        var spatialPosition = (spatialPositionVector?.ToList())
-                              ?? throw new ArgumentNullException(nameof(spatialPositionVector));
+        var spatialPosition = spatialPositionVector?.ToList()
+                           ?? throw new ArgumentNullException(nameof(spatialPositionVector));
         if (spatialPosition.Count > Dimension)
         {
-            throw new ArgumentOutOfRangeException(nameof(spatialPositionVector),
-                      "The spatial position vector must have the dimension of the Ising model.");
+            throw new ArgumentOutOfRangeException(
+                nameof(spatialPositionVector),
+                "The spatial position vector must have the dimension of the Ising model.");
         }
 
         return SpatialVectorToSpinIndex(spatialPosition);
@@ -120,8 +123,8 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
 
     // D-nary-to-decimal conversion
     internal int SpatialVectorToSpinIndex(List<int> dNaryNumber) =>
-                 dNaryNumber.Select((digit, index) => digit * _decimalValuePerDNaryDigit[index])
-                 .Sum();
+        dNaryNumber.Select((digit, index) => digit * _decimalValuePerDNaryDigit[index])
+                   .Sum();
 
     private List<int> FindNeighboursOfSpin(int spinIndex)
     {
@@ -132,10 +135,11 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
         {
             var positiveDirectionNeighbour = spatialVector.ToList();
             positiveDirectionNeighbour[dimensionIndex] = (spatialVector[dimensionIndex] + 1) % LatticeLength;
+
             // Do this instead of Modulo(index - 1, LatticeLength) to avoid minus-sign problem
             var negativeDirectionNeighbour = spatialVector.ToList();
             negativeDirectionNeighbour[dimensionIndex] = (spatialVector[dimensionIndex] + (LatticeLength - 1))
-                                                         % LatticeLength;
+                                                       % LatticeLength;
 
             listOfNeighbours.Add(SpatialVectorToSpinIndex(positiveDirectionNeighbour));
             listOfNeighbours.Add(SpatialVectorToSpinIndex(negativeDirectionNeighbour));

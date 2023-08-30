@@ -1,5 +1,3 @@
-using IsingMonteCarlo.Services;
-
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
 public class GlauberDynamics : ISpinDynamics
@@ -22,11 +20,11 @@ public class GlauberDynamics : ISpinDynamics
         double? jY)
     {
         var chosenSite = _random.Next(minValue: 0, _totalSpinsCount);
-        var flip = FlipWithGlauber(randomProbability: _random.NextDouble(), chosenSite, beta, j, h, jY);
+        var flip = FlipWithGlauber(_random.NextDouble(), chosenSite, beta, j, h, jY);
 
         if (flip)
         {
-            _hamiltonian.FlipSpinWithEnergyUpdate(chosenSite, j, h, jY);
+            _hamiltonian.FlipSpinWithPropertiesUpdate(chosenSite, j, h, jY);
         }
     }
 

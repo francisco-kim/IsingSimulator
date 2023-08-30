@@ -1,14 +1,14 @@
 using System.Numerics;
 
-using IsingMonteCarlo.Representations;
-
-namespace IsingMonteCarlo.Services;
+namespace IsingMonteCarlo.Representations;
 
 public interface IHamiltonian<T> where T : INumber<T>
 {
     NearestNeighbourNDIsingLattice<T> Lattice { get; }
 
-    double TotalEnergy { get; set; }
+    double TotalEnergy { get; }
+
+    double TotalMagnetisation { get; }
 
     double GetTotalEnergy(
         double j,
@@ -17,7 +17,7 @@ public interface IHamiltonian<T> where T : INumber<T>
 
     void FlipSpin(int spinIndex);
 
-    public void FlipSpinWithEnergyUpdate(
+    public void FlipSpinWithPropertiesUpdate(
         int spinIndex,
         double j,
         double h,

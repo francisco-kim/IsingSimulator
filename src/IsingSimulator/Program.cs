@@ -1,6 +1,5 @@
 ﻿using IsingMonteCarlo.Helpers;
 using IsingMonteCarlo.Models;
-using IsingMonteCarlo.Representations;
 using IsingMonteCarlo.Services;
 
 var isSingleRun = true;
@@ -67,6 +66,6 @@ else
 
         Console.WriteLine($"Iteration {iterationIndex} completed.");
 
-        return new IsingHamiltonian(monteCarlo.Lattice).GetAverageMagnetisation(j, h);
+        return monteCarlo.Hamiltonian.GetAverageMagnetisation(j, h);
     }
 }

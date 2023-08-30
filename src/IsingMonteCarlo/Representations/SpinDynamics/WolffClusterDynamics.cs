@@ -1,5 +1,3 @@
-using IsingMonteCarlo.Services;
-
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
 public class WolffClusterDynamics : ISpinDynamics
@@ -27,9 +25,12 @@ public class WolffClusterDynamics : ISpinDynamics
     {
         if (h is not 0.0)
         {
-            throw new ArgumentException("The Wolff single-cluster algorithm is not allowed "
-                + $"if the extrnal field is present ({nameof(h)} = {h} here).", nameof(h));
+            throw new ArgumentException(
+                "The Wolff single-cluster algorithm is not allowed "
+              + $"if the extrnal field is present ({nameof(h)} = {h} here).",
+                nameof(h));
         }
+
         // If a cluster has not been chosen yet
         if (_clusterQueue.Count is 0)
         {
@@ -38,7 +39,7 @@ public class WolffClusterDynamics : ISpinDynamics
             _clusterQueue.Enqueue(chosenSite);
 
             // Flip reference spin of the cluster
-            _hamiltonian.FlipSpinWithEnergyUpdate(chosenSite, j, h, jY);
+            _hamiltonian.FlipSpinWithPropertiesUpdate(chosenSite, j, h, jY);
         }
 
         var siteIndexToConsider = _clusterQueue.Dequeue();
@@ -57,7 +58,7 @@ public class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
-                    _hamiltonian.FlipSpinWithEnergyUpdate(neighbour, j, h, jY);
+                    _hamiltonian.FlipSpinWithPropertiesUpdate(neighbour, j, h, jY);
                 }
             }
         }
@@ -78,7 +79,7 @@ public class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
-                    _hamiltonian.FlipSpinWithEnergyUpdate(neighbour, j, h, jY);
+                    _hamiltonian.FlipSpinWithPropertiesUpdate(neighbour, j, h, jY);
                 }
             }
 

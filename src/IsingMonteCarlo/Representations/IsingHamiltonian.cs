@@ -1,5 +1,3 @@
-using IsingMonteCarlo.Services;
-
 namespace IsingMonteCarlo.Representations;
 
 public sealed class IsingHamiltonian : IHamiltonian<int>
@@ -19,44 +17,46 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
         _dimension = lattice.Dimension;
         _neighboursIndices = lattice.NeighboursIndices;
         _totalSpinsCount = lattice.TotalSpinsCount;
+
         TotalEnergy = double.NaN;
+        TotalMagnetisation = int.MinValue;
     }
 
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
-    public double TotalEnergy { get; set; }
+    public double TotalEnergy { get; private set; }
+
+    public double TotalMagnetisation { get; private set; }
 
     public double GetTotalEnergy(
         double j,
         double h,
         double? jY = null)
     {
-        var totalEnergy = 0.5 * Enumerable.Range(0, _totalSpinsCount)
-                        .Select(i => GetEnergyOfSite(i, j, h, jY))
-                        .Sum();
-
         if (TotalEnergy is double.NaN)
         {
-            TotalEnergy = totalEnergy;
+            TotalEnergy = 0.5 * Enumerable.Range(0, _totalSpinsCount)
+                        .Select(i => GetEnergyOfSite(i, j, h, jY))
+                        .Sum();
         }
 
-        return totalEnergy;
+        return TotalEnergy;
     }
 
     public void FlipSpin(int spinIndex) => Lattice.Spins[spinIndex] *= -1;
 
-    public void FlipSpinWithEnergyUpdate(
+    public void FlipSpinWithPropertiesUpdate(
         int spinIndex,
         double j,
         double h,
         double? jY = null)
     {
-        if (TotalEnergy is double.NaN)
-        {
-            TotalEnergy = GetTotalEnergy(j, h, jY);
-        }
+        var totalEnergy = GetTotalEnergy(j, h, jY);
+        var totalMagnetisation = GetTotalMagnetisation();
 
         TotalEnergy += GetDeltaEnergyOfSite(spinIndex, j, h, jY);
+        TotalMagnetisation += -2 * Lattice.Spins[spinIndex];
+
         Lattice.Spins[spinIndex] *= -1;
     }
 
@@ -73,7 +73,7 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
     public double GetAverageMagnetisation(
         double j,
         double h,
-        double? jY = null) => (double)Lattice.Spins.Sum() / _totalSpinsCount;
+        double? jY = null) => (double)GetTotalMagnetisation() / _totalSpinsCount;
 
     public double GetDeltaEnergyOfSite(
         int spinIndex,
@@ -118,5 +118,15 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
                                                                           * spinValue)
                                                 .Sum()
                - h * spinValue;
+    }
+
+    private double GetTotalMagnetisation()
+    {
+        if (TotalMagnetisation is int.MinValue)
+        {
+            TotalMagnetisation = Lattice.Spins.Sum();
+        }
+
+        return TotalMagnetisation;
     }
 }

@@ -1,5 +1,3 @@
-using IsingMonteCarlo.Services;
-
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
 public class MetropolisDynamics : ISpinDynamics
@@ -22,11 +20,11 @@ public class MetropolisDynamics : ISpinDynamics
         double? jY)
     {
         var chosenSite = _random.Next(minValue: 0, _totalSpinsCount);
-        var flip = FlipWithMetropolis(randomProbability: _random.NextDouble(), chosenSite, beta, j, h, jY);
+        var flip = FlipWithMetropolis(_random.NextDouble(), chosenSite, beta, j, h, jY);
 
         if (flip)
         {
-            _hamiltonian.FlipSpinWithEnergyUpdate(chosenSite, j, h, jY);
+            _hamiltonian.FlipSpinWithPropertiesUpdate(chosenSite, j, h, jY);
         }
     }
 
@@ -37,5 +35,6 @@ public class MetropolisDynamics : ISpinDynamics
         double j,
         double h,
         double? jY) =>
-        randomProbability <= Math.Min(1.0, Math.Exp(-beta * _hamiltonian.GetDeltaEnergyOfSite(siteIndex, j, h, jY)));
+        randomProbability
+     <= Math.Min(val1: 1.0, Math.Exp(-beta * _hamiltonian.GetDeltaEnergyOfSite(siteIndex, j, h, jY)));
 }

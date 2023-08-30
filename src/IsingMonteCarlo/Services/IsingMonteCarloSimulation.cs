@@ -69,8 +69,6 @@ public sealed class IsingMonteCarloSimulation
 
     public int TotalSpinsCount { get; }
 
-    public int TotalEnergy { get; set; }
-
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
 
     public IHamiltonian<int> Hamiltonian { get; }
