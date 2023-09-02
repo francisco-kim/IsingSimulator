@@ -12,17 +12,19 @@ public static class LatticeConfigurationSaver
     {
         var enumeratedSpins = spins.ToList() ?? throw new ArgumentException(nameof(spins));
         var (filename, dataDirectory) = GetFilename(enumeratedSpins, temperature, iterationCount);
+        var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(dataDirectory, filename));
 
         if (!isBinary)
         {
             File.WriteAllLines(
-                dataDirectory + "\\" + filename + ".dat",
+                completePathWithoutFileExtension + ".dat",
                 enumeratedSpins.Select(x => string.Join(separator: ";", x)));
         }
         else
         {
             using var writer = new BinaryWriter(
-                new FileStream(path: dataDirectory + "\\" + filename + ".bin", FileMode.Create));
+                new FileStream(path: completePathWithoutFileExtension + ".bin",
+                               FileMode.Create));
             foreach (var item in enumeratedSpins)
             {
                 writer.Write(item);
@@ -43,7 +45,7 @@ public static class LatticeConfigurationSaver
             throw new ArgumentException(message: "The filename is not formatted correctly.", nameof(filename));
         }
 
-        temperature = Convert.ToDouble(filenameData[index: 1] + "." +filenameData[index: 2]);
+        temperature = Convert.ToDouble(filenameData[index: 1] + "." + filenameData[index: 2]);
         iterationCount = Convert.ToInt32(filenameData[index: 3]);
 
         if (filenameData.Last() is ".dat")
@@ -66,8 +68,10 @@ public static class LatticeConfigurationSaver
 
     private static (string Filename, string DataDirectory) GetFilename(List<int> spins, double temperature, int iterationCount)
     {
-        var workingDirectory = Environment.CurrentDirectory;
-        var dataDirectory = Directory.GetParent(workingDirectory).Parent.Parent.Parent.Parent.FullName + "\\data";
+        var workingDirectory = Directory.GetCurrentDirectory();
+        var rootDirectory = Directory.GetParent(workingDirectory)?.Parent
+            ?? throw new ArgumentException(nameof(workingDirectory));
+        var dataDirectory = Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data"));
         Directory.CreateDirectory(dataDirectory);
 
         var filename = Math.Sqrt(spins.Count).ToString(format: "G10", CultureInfo.InvariantCulture)
