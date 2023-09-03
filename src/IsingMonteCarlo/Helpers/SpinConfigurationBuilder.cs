@@ -1,8 +1,38 @@
+using IsingMonteCarlo.Models;
+
 namespace IsingMonteCarlo.Helpers;
 
 public static class SpinConfigurationBuilder
 {
-    public static List<int> InitialiseLattice(int totalSpinsCount,
+    public static InitialLatticeData InitialiseLattice(string? filename,
+                                              int dimension = 2,
+                                              int latticeLength = 100,
+                                              double initialSpinDownRatio = 0.25,
+                                              int? randomSeed = 41)
+    {
+        if (filename is not null)
+        {
+            var dataDirectory = LatticeConfigurationSaver.GetDataRootDirectory();
+            // var firstFileName = new DirectoryInfo(dataDirectory).EnumerateFiles()
+            //                                                     .Select(file => file.FullName)
+            //                                                     .FirstOrDefault();
+            var fullPathWithFilename = Path.GetFullPath(Path.Combine(dataDirectory, filename));
+
+            var spinConfiguration =  LatticeConfigurationSaver.LoadLattice(fullPathWithFilename,
+                                                         out var boltzmannTemperature,
+                                                         out var previousIterationCount);
+
+            return (spinConfiguration, boltzmannTemperature, previousIterationCount);
+        }
+
+        var totalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));
+
+        return (InitialiseRandomLattice(totalSpinsCount,
+                                       initialSpinDownRatio,
+                                       randomSeed), boltzmannTemperature: double.NaN, previousIterationCount: 0);
+    }
+
+    public static List<int> InitialiseRandomLattice(int totalSpinsCount,
                                        double initialSpinDownRatio,
                                        int? randomSeed = null)
     {

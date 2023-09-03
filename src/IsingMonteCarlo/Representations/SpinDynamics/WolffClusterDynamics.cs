@@ -1,6 +1,6 @@
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
-public class WolffClusterDynamics : ISpinDynamics
+public sealed class WolffClusterDynamics : ISpinDynamics
 {
     private readonly IHamiltonian<int> _hamiltonian;
     private readonly int _totalSpinsCount;

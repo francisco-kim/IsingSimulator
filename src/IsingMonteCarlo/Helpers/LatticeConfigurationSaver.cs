@@ -48,7 +48,7 @@ public static class LatticeConfigurationSaver
         temperature = Convert.ToDouble(filenameData[index: 1] + "." + filenameData[index: 2]);
         iterationCount = Convert.ToInt32(filenameData[index: 3]);
 
-        if (filenameData.Last() is ".dat")
+        if (filenameData.Last() is "dat")
         {
             return File.ReadLines(filename)
                        .SelectMany(x => x.Split(separator: ',').Select(int.Parse))
@@ -66,13 +66,25 @@ public static class LatticeConfigurationSaver
         return result;
     }
 
-    private static (string Filename, string DataDirectory) GetFilename(List<int> spins, double temperature, int iterationCount)
+    public static string GetDataRootDirectory()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var rootDirectory = Directory.GetParent(workingDirectory)?.Parent
+        var rootParentDirectory = Directory.GetParent(workingDirectory)
             ?? throw new ArgumentException(nameof(workingDirectory));
-        var dataDirectory = Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data"));
-        Directory.CreateDirectory(dataDirectory);
+        var rootDirectory = Directory.GetParent(rootParentDirectory.FullName)
+            ?? throw new ArgumentException(nameof(rootParentDirectory));
+
+        return Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data"));
+    }
+
+    private static (string Filename, string DataDirectory) GetFilename(List<int> spins, double temperature, int iterationCount)
+    {
+        var dataDirectory = GetDataRootDirectory();
+
+        if (!Directory.Exists(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+        }
 
         var filename = Math.Sqrt(spins.Count).ToString(format: "G10", CultureInfo.InvariantCulture)
                      + "_"

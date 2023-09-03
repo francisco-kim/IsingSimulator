@@ -1,6 +1,6 @@
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
-public class GlauberDynamics : ISpinDynamics
+public sealed class GlauberDynamics : ISpinDynamics
 {
     private readonly IHamiltonian<int> _hamiltonian;
     private readonly int _totalSpinsCount;

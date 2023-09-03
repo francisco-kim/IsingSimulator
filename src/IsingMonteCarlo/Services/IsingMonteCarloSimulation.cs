@@ -98,7 +98,7 @@ public sealed class IsingMonteCarloSimulation
         MagnetisationAbsoluteSigma = double.NaN;
         EnergySigma = double.NaN;
         SusceptibilityList = new List<double>();
-        CorrelationLengthList = new List<double>();
+        RenormalisedCorrelationLengthList = new List<double>();
 
         _measurementsCount = 0.0;
         _magnetisationSum = 0.0;
@@ -157,7 +157,7 @@ public sealed class IsingMonteCarloSimulation
 
     public List<double> SusceptibilityList { get; private set; }
 
-    public List<double> CorrelationLengthList { get; private set; }
+    public List<double> RenormalisedCorrelationLengthList { get; private set; }
 
     public void RunMonteCarlo(
         double beta,
@@ -213,7 +213,7 @@ public sealed class IsingMonteCarloSimulation
         double j,
         double h,
         int iterationStepsBetweenMeasurements,
-        int? measurementsCount,
+        int measurementsCount,
         SpinUpdateMethod spinUpdateMethod,
         double? jY = null,
         int? randomSeed = null)
@@ -249,73 +249,135 @@ public sealed class IsingMonteCarloSimulation
                 "The observables cannot be computed less than every one step.");
         }
 
-        InitialiseFieldsAndPropertiesForObservables();
+        ResetObservables();
 
-        if (measurementsCount is null)
+        var totalIterationCount = iterationStepsBetweenMeasurements * measurementsCount;
+        var iterationCount = 0;
+
+        if (measurementsCount is 0)
         {
-            while (true)
+            iterateWithObservablesMeasurements(isInfiniteLoop: true);
+        }
+
+        iterateWithObservablesMeasurements(isInfiniteLoop: false);
+
+        void iterateWithObservablesMeasurements(bool isInfiniteLoop)
+        {
+            var iterationConditionIsSatisfied = true;
+            while (iterationConditionIsSatisfied)
             {
                 _spinDynamics.FlipSpin(beta, j, h, jY);
-            }
-        }
 
-        var iterationCount = 0;
-        while (iterationCount < iterationStepsBetweenMeasurements * measurementsCount)
-        {
-            _spinDynamics.FlipSpin(beta, j, h, jY);
-
-            if (iterationCount % iterationStepsBetweenMeasurements == 0)
-            {
-                var magnetisationMeasurement = Hamiltonian.GetAverageMagnetisation(j, h, jY);
-                var magnetisationSquaredMeasurement = magnetisationMeasurement * magnetisationMeasurement;
-                var magnetisationAbsoluteMeasurement = Math.Abs(magnetisationMeasurement);
-                var energyMeasurement = Hamiltonian.GetAverageEnergy(j, h, jY);
-
-                _magnetisationSum += magnetisationMeasurement;
-                _magnetisationSquaredSum += magnetisationSquaredMeasurement;
-                _magnetisationAbsoluteSum += magnetisationAbsoluteMeasurement;
-                _energySum += energyMeasurement;
-                MeasureStructureFactorSQ1AndSQ2();
-
-                _measurementsCount++;
-
-                Magnetisation = _magnetisationSum / _measurementsCount;
-                MagnetisationSquared = _magnetisationSquaredSum / _measurementsCount;
-                MagnetisationAbsolute = _magnetisationAbsoluteSum / _measurementsCount;
-                Energy = _energySum / _measurementsCount;
-
-                Susceptibility = beta * (MagnetisationSquared - MagnetisationAbsolute * MagnetisationAbsolute);
-                (CorrelationLengthX, CorrelationLengthY) = GetCorrelationLengthInXYDirections();
-                RenormalisedCorrelationLength = (CorrelationLengthX + CorrelationLengthY) / 2.0 / LatticeLength;
-
-                if (_measurementsCount <= 1)
+                if (iterationCount % iterationStepsBetweenMeasurements == 0)
                 {
-                    continue;
+                    var magnetisationMeasurement = Hamiltonian.GetAverageMagnetisation(j, h, jY);
+                    var magnetisationSquaredMeasurement = magnetisationMeasurement * magnetisationMeasurement;
+                    var magnetisationAbsoluteMeasurement = Math.Abs(magnetisationMeasurement);
+                    var energyMeasurement = Hamiltonian.GetAverageEnergy(j, h, jY);
+
+                    _magnetisationSum += magnetisationMeasurement;
+                    _magnetisationSquaredSum += magnetisationSquaredMeasurement;
+                    _magnetisationAbsoluteSum += magnetisationAbsoluteMeasurement;
+                    _energySum += energyMeasurement;
+                    MeasureStructureFactorSQ1AndSQ2();
+
+                    _measurementsCount++;
+
+                    Magnetisation = _magnetisationSum / _measurementsCount;
+                    MagnetisationSquared = _magnetisationSquaredSum / _measurementsCount;
+                    MagnetisationAbsolute = _magnetisationAbsoluteSum / _measurementsCount;
+                    Energy = _energySum / _measurementsCount;
+
+                    Susceptibility = beta * (MagnetisationSquared - MagnetisationAbsolute * MagnetisationAbsolute);
+                    (CorrelationLengthX, CorrelationLengthY) = GetCorrelationLengthInXYDirections();
+                    RenormalisedCorrelationLength = (CorrelationLengthX + CorrelationLengthY) / 2.0 / LatticeLength;
+
+                    if (_measurementsCount <= 1)
+                    {
+                        continue;
+                    }
+
+                    _magnetisationVariance += 1.0 / (_measurementsCount - 1.0)
+                        * (magnetisationMeasurement - Magnetisation)
+                        * (magnetisationMeasurement - Magnetisation);
+                    MagnetisationSigma = Math.Sqrt(_magnetisationVariance);
+
+                    _magnetisationSquaredVariance += 1.0 / (_measurementsCount - 1.0)
+                        * (magnetisationSquaredMeasurement - MagnetisationSquared)
+                        * (magnetisationSquaredMeasurement - MagnetisationSquared);
+                    MagnetisationSquaredSigma = Math.Sqrt(_magnetisationSquaredVariance);
+
+                    _magnetisationAbsoluteVariance += 1.0 / (_measurementsCount - 1.0)
+                        * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute)
+                        * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute);
+                    MagnetisationAbsoluteSigma = Math.Sqrt(_magnetisationVariance);
+
+                    _energyVariance += 1.0 / (_measurementsCount - 1.0)
+                        * (energyMeasurement - Energy)
+                        * (energyMeasurement - Energy);
+                    EnergySigma = Math.Sqrt(_energyVariance);
                 }
 
-                _magnetisationVariance += 1.0 / (_measurementsCount - 1.0)
-                    * (magnetisationMeasurement - Magnetisation)
-                    * (magnetisationMeasurement - Magnetisation);
-                MagnetisationSigma = Math.Sqrt(_magnetisationVariance);
+                if (!isInfiniteLoop && measurementsCount >= 3)
+                {
+                    if ((iterationCount == totalIterationCount / 3)
+                        || (iterationCount == 2 * totalIterationCount / 3)
+                        || (iterationCount == totalIterationCount - 1))
+                    {
+                        SusceptibilityList.Add(Susceptibility);
+                        RenormalisedCorrelationLengthList.Add(RenormalisedCorrelationLength);
+                    }
+                }
 
-                _magnetisationSquaredVariance += 1.0 / (_measurementsCount - 1.0)
-                    * (magnetisationSquaredMeasurement - MagnetisationSquared)
-                    * (magnetisationSquaredMeasurement - MagnetisationSquared);
-                MagnetisationSquaredSigma = Math.Sqrt(_magnetisationSquaredVariance);
-                
-                _magnetisationAbsoluteVariance += 1.0 / (_measurementsCount - 1.0)
-                    * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute)
-                    * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute);
-                MagnetisationAbsoluteSigma = Math.Sqrt(_magnetisationVariance);
+                ++iterationCount;
 
-                _energyVariance += 1.0 / (_measurementsCount - 1.0)
-                    * (energyMeasurement - Energy)
-                    * (energyMeasurement - Energy);
-                EnergySigma = Math.Sqrt(_energyVariance);
+                if (isInfiniteLoop)
+                {
+                    if (iterationCount >= int.MaxValue || measurementsCount >= 1000)
+                    {
+                        iterationCount = 0;
+                    }
+                }
+                else
+                {
+                    iterationConditionIsSatisfied = iterationCount < totalIterationCount;
+                }
             }
-
-            ++iterationCount;
         }
+    }
+
+    internal void ResetObservables()
+    {
+        Magnetisation = 0.0;
+        MagnetisationSquared = 0.0;
+        MagnetisationAbsolute = 0.0;
+        Energy = 0.0;
+        Susceptibility = 0.0;
+        RenormalisedCorrelationLength = 0.0;
+        MagnetisationSigma = 0.0;
+        MagnetisationSquaredSigma = 0.0;
+        MagnetisationAbsoluteSigma = 0.0;
+        EnergySigma = 0.0;
+        SusceptibilityList = new List<double>();
+        RenormalisedCorrelationLengthList = new List<double>();
+
+        _measurementsCount = 0.0;
+        _magnetisationSum = 0.0;
+        _magnetisationSquaredSum = 0.0;
+        _magnetisationAbsoluteSum = 0.0;
+        _energySum = 0.0;
+        _magnetisationVariance = 0.0;
+        _magnetisationSquaredVariance = 0.0;
+        _magnetisationAbsoluteVariance = 0.0;
+        _energyVariance = 0.0;
+        _structureFactorQ1XContributionFromRealSpinQ = 0.0;
+        _structureFactorQ1XContributionFromImaginarySpinQ = 0.0;
+        _structureFactorQ2XContributionFromRealSpinQ = 0.0;
+        _structureFactorQ2XContributionFromImaginarySpinQ = 0.0;
+        _structureFactorQ1YContributionFromRealSpinQ = 0.0;
+        _structureFactorQ1YContributionFromImaginarySpinQ = 0.0;
+        _structureFactorQ2YContributionFromRealSpinQ = 0.0;
+        _structureFactorQ2YContributionFromImaginarySpinQ = 0.0;
     }
 
     // Only if coupling strength is symmetrical in all directions
@@ -400,39 +462,5 @@ public sealed class IsingMonteCarloSimulation
 
         static double scalarProduct(List<double> v1, List<int> v2) =>
             v1.Zip(v2, (firstV, secondV) => firstV * secondV).Sum();
-    }
-
-    private void InitialiseFieldsAndPropertiesForObservables()
-    {
-        Magnetisation = 0.0;
-        MagnetisationSquared = 0.0;
-        MagnetisationAbsolute = 0.0;
-        Energy = 0.0;
-        Susceptibility = 0.0;
-        RenormalisedCorrelationLength = 0.0;
-        MagnetisationSigma = 0.0;
-        MagnetisationSquaredSigma = 0.0;
-        MagnetisationAbsoluteSigma = 0.0;
-        EnergySigma = 0.0;
-        SusceptibilityList = new List<double>();
-        CorrelationLengthList = new List<double>();
-
-        _measurementsCount = 0.0;
-        _magnetisationSum = 0.0;
-        _magnetisationSquaredSum = 0.0;
-        _magnetisationAbsoluteSum = 0.0;
-        _energySum = 0.0;
-        _magnetisationVariance = 0.0;
-        _magnetisationSquaredVariance = 0.0;
-        _magnetisationAbsoluteVariance = 0.0;
-        _energyVariance = 0.0;
-        _structureFactorQ1XContributionFromRealSpinQ = 0.0;
-        _structureFactorQ1XContributionFromImaginarySpinQ = 0.0;
-        _structureFactorQ2XContributionFromRealSpinQ = 0.0;
-        _structureFactorQ2XContributionFromImaginarySpinQ = 0.0;
-        _structureFactorQ1YContributionFromRealSpinQ = 0.0;
-        _structureFactorQ1YContributionFromImaginarySpinQ = 0.0;
-        _structureFactorQ2YContributionFromRealSpinQ = 0.0;
-        _structureFactorQ2YContributionFromImaginarySpinQ = 0.0;
     }
 }

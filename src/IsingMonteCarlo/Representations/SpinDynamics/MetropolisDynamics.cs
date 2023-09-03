@@ -1,6 +1,6 @@
 namespace IsingMonteCarlo.Representations.SpinDynamics;
 
-public class MetropolisDynamics : ISpinDynamics
+public sealed class MetropolisDynamics : ISpinDynamics
 {
     private readonly IHamiltonian<int> _hamiltonian;
     private readonly int _totalSpinsCount;
