@@ -18,16 +18,17 @@ public sealed class IsingSimulationSingleRun
     private readonly int? _randomSeed;
     private readonly int _previousIterationCount;
 
-    public IsingSimulationSingleRun(string? filename,
-                                    int dimension,
-                                    int latticeLength,
-                                    double temperature,
-                                    double j,
-                                    double h,
-                                    SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
-                                    double? jY = null,
-                                    double initialSpinDownRatio = 0.25,
-                                    int? randomSeed = 41)
+    public IsingSimulationSingleRun(
+        string? filename,
+        int dimension,
+        int latticeLength,
+        double temperature,
+        double j,
+        double h,
+        SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
+        double? jY = null,
+        double initialSpinDownRatio = 0.25,
+        int? randomSeed = 41)
     {
         _temperature = temperature;
         _beta = 1 / temperature;
@@ -63,11 +64,12 @@ public sealed class IsingSimulationSingleRun
         CorrelationLengthYList = new List<double>();
 
         var (initialSpinConfiguration, _, previousIterationCount) =
-            SpinConfigurationBuilder.InitialiseLattice(filename,
-                                                       dimension,
-                                                       latticeLength,
-                                                       initialSpinDownRatio,
-                                                       randomSeed);
+            SpinConfigurationBuilder.InitialiseLattice(
+                filename,
+                dimension,
+                latticeLength,
+                initialSpinDownRatio,
+                randomSeed);
 
         _previousIterationCount = previousIterationCount;
 
@@ -100,37 +102,40 @@ public sealed class IsingSimulationSingleRun
 
     public double RenormalisedCorrelationLengthSigma { get; private set; }
 
-    public List<double> MagnetisationList { get; private set; }
+    public List<double> MagnetisationList { get; }
 
-    public List<double> MagnetisationSquaredList { get; private set; }
+    public List<double> MagnetisationSquaredList { get; }
 
-    public List<double> MagnetisationAbsoluteList { get; private set; }
+    public List<double> MagnetisationAbsoluteList { get; }
 
-    public List<double> EnergyList { get; private set; }
- 
-    public List<double> SusceptibilityList { get; private set; }
+    public List<double> EnergyList { get; }
 
-    public List<double> RenormalisedCorrelationLengthList { get; private set; }
+    public List<double> SusceptibilityList { get; }
 
-    public List<double> CorrelationLengthXList { get; private set; }
+    public List<double> RenormalisedCorrelationLengthList { get; }
 
-    public List<double> CorrelationLengthYList { get; private set; }
+    public List<double> CorrelationLengthXList { get; }
 
-    public void RunWithMeasurements(int iterationStepsBetweenMeasurements,
-                                    int measurementsCount,
-                                    int measurementsRepetitionCount,
-                                    int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
-                                    bool saveLattice = true,
-                                    bool saveMeasurements = true)
+    public List<double> CorrelationLengthYList { get; }
+
+    public void RunWithMeasurements(
+        int iterationStepsBetweenMeasurements,
+        int measurementsCount,
+        int measurementsRepetitionCount,
+        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
+        bool saveLattice = true,
+        bool saveMeasurements = true)
     {
-        Thermalise(thermalisationStepsInLatticeSizeUnit,
-                   _spinUpdateMethod,
-                   saveLattice);
+        Thermalise(
+            thermalisationStepsInLatticeSizeUnit,
+            _spinUpdateMethod,
+            saveLattice);
 
-        MeasurementsRun(iterationStepsBetweenMeasurements,
-                        measurementsCount,
-                        measurementsRepetitionCount,
-                        saveMeasurements);
+        MeasurementsRun(
+            iterationStepsBetweenMeasurements,
+            measurementsCount,
+            measurementsRepetitionCount,
+            saveMeasurements);
 
         // if (saveLattice)
         // {
@@ -145,12 +150,15 @@ public sealed class IsingSimulationSingleRun
         // }
     }
 
-    public void MeasurementsRun(int iterationStepsBetweenMeasurements,
-                                int measurementsCount,
-                                int measurementsRepetitionCount,
-                                bool saveMeasurements = true)
+    public void MeasurementsRun(
+        int iterationStepsBetweenMeasurements,
+        int measurementsCount,
+        int measurementsRepetitionCount,
+        bool saveMeasurements = true)
     {
-        for (int measurementRepetition = 0; measurementRepetition < measurementsRepetitionCount; measurementRepetition++)
+        for (var measurementRepetition = 0;
+             measurementRepetition < measurementsRepetitionCount;
+             measurementRepetition++)
         {
             Simulation.RunMonteCarloWithObservablesComputation(
                 _beta,
@@ -159,6 +167,7 @@ public sealed class IsingSimulationSingleRun
                 iterationStepsBetweenMeasurements,
                 measurementsCount,
                 _spinUpdateMethod,
+                _jY,
                 _randomSeed);
 
             MagnetisationList.AddRange(Simulation.MagnetisationList);
@@ -172,14 +181,18 @@ public sealed class IsingSimulationSingleRun
             {
                 CorrelationLengthXList.Add(Simulation.CorrelationLengthX);
             }
+
             if (!double.IsNaN(Simulation.CorrelationLengthY))
             {
                 CorrelationLengthYList.Add(Simulation.CorrelationLengthY);
             }
+
             if (!double.IsNaN(Simulation.RenormalisedCorrelationLength))
             {
                 RenormalisedCorrelationLengthList.Add(Simulation.RenormalisedCorrelationLength);
             }
+
+            Simulation.ResetObservables();
         }
 
         Magnetisation = MagnetisationList.Sum() / MagnetisationList.Count;
@@ -201,8 +214,10 @@ public sealed class IsingSimulationSingleRun
         Susceptibility = SusceptibilityList.Sum() / SusceptibilityList.Count;
         SusceptibilitySigma = Math.Sqrt(GetVariance(SusceptibilityList, Susceptibility));
 
-        RenormalisedCorrelationLength = RenormalisedCorrelationLengthList.Sum() / RenormalisedCorrelationLengthList.Count;
-        RenormalisedCorrelationLengthSigma = Math.Sqrt(GetVariance(RenormalisedCorrelationLengthList, RenormalisedCorrelationLength));
+        RenormalisedCorrelationLength =
+            RenormalisedCorrelationLengthList.Sum() / RenormalisedCorrelationLengthList.Count;
+        RenormalisedCorrelationLengthSigma =
+            Math.Sqrt(GetVariance(RenormalisedCorrelationLengthList, RenormalisedCorrelationLength));
 
         Console.WriteLine($"Chi = {Susceptibility} +- {SusceptibilitySigma}");
         Console.WriteLine($" Xi = {RenormalisedCorrelationLength} +- {RenormalisedCorrelationLengthSigma}");
@@ -213,9 +228,10 @@ public sealed class IsingSimulationSingleRun
         }
     }
 
-    public void Thermalise(int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
-                           SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
-                           bool saveLattice = true)
+    public void Thermalise(
+        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
+        SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
+        bool saveLattice = true)
     {
         Simulation.RunMonteCarlo(
             _beta,
@@ -223,43 +239,50 @@ public sealed class IsingSimulationSingleRun
             _h,
             thermalisationStepsInLatticeSizeUnit * Simulation.TotalSpinsCount,
             spinUpdateMethod,
+            _jY,
             _randomSeed);
 
         if (saveLattice)
         {
-            LatticeConfigurationSaver.SaveLattice(Simulation.Lattice.Spins,
-                                                  _temperature,
-                                                  _previousIterationCount
-                                                  + thermalisationStepsInLatticeSizeUnit
-                                                  * Simulation.TotalSpinsCount,
-                                                  isBinary: false);
+            LatticeConfigurationSaver.SaveLattice(
+                Simulation.Lattice.Spins,
+                _temperature,
+                _previousIterationCount
+              + thermalisationStepsInLatticeSizeUnit
+              * Simulation.TotalSpinsCount,
+                isBinary: false);
         }
 
-        Console.WriteLine($"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
-            + " after thermalisation.\n");
+        Console.WriteLine(
+            $"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
+          + " after thermalisation.\n");
     }
 
     private void SaveMeasurements()
     {
-        var (_, measurementDataDirectory) = LatticeConfigurationSaver.GetFilename(Simulation.Lattice.Spins,
-                                                                                         _temperature,
-                                                                                         iterationCount: 0);
-        measurementDataDirectory = Path.GetFullPath(Path.Combine(measurementDataDirectory, "measurements"));
+        var (_, measurementDataDirectory) = LatticeConfigurationSaver.GetFilename(
+            Simulation.Lattice.Spins,
+            _temperature,
+            iterationCount: 0);
+        measurementDataDirectory = Path.GetFullPath(Path.Combine(measurementDataDirectory, path2: "measurements"));
 
         if (!Directory.Exists(measurementDataDirectory))
         {
             Directory.CreateDirectory(measurementDataDirectory);
         }
 
-        var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.0000}"));
+        var completePathWithoutFileExtension =
+            Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.0000}"));
 
-        var results = new List<string>();
-        results.Add($"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationList) + "}}");
-        results.Add($"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationSquaredList) + "}}");
-        results.Add($"mAbs = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationAbsoluteList) + "}}");
-        results.Add($"energy = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", EnergyList) + "}}");
-        results.Add($"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", SusceptibilityList) + "}}");
-        results.Add($"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", RenormalisedCorrelationLengthList) + "}}");
+        var results = new List<string>
+        {
+            $"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationList) + "}}",
+            $"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationSquaredList) + "}}",
+            $"mAbs = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationAbsoluteList) + "}}",
+            $"energy = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", EnergyList) + "}}",
+            $"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", SusceptibilityList) + "}}",
+            $"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", RenormalisedCorrelationLengthList) + "}}"
+        };
 
         File.WriteAllLines(
             completePathWithoutFileExtension + ".num",

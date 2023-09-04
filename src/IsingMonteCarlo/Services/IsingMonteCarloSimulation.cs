@@ -176,6 +176,7 @@ public sealed class IsingMonteCarloSimulation
                 SpinUpdateMethod.Wolff => new WolffClusterDynamics(Hamiltonian, randomSeed),
                 _ => new GlauberDynamics(Hamiltonian, randomSeed)
             };
+            _spinUpdateMethod = spinUpdateMethod;
         }
 
         if (iterationLimit is null)
@@ -279,7 +280,9 @@ public sealed class IsingMonteCarloSimulation
                     MagnetisationAbsolute = _magnetisationAbsoluteSum / _measurementsCount;
                     Energy = _energySum / _measurementsCount;
 
-                    Susceptibility = beta * (MagnetisationSquared - MagnetisationAbsolute * MagnetisationAbsolute);
+                    Susceptibility = TotalSpinsCount
+                                   * beta
+                                   * (MagnetisationSquared - MagnetisationAbsolute * MagnetisationAbsolute);
                     (CorrelationLengthX, CorrelationLengthY) = GetCorrelationLengthInXYDirections();
 
                     if (!double.IsNaN(CorrelationLengthX) && !double.IsNaN(CorrelationLengthX))
@@ -288,16 +291,11 @@ public sealed class IsingMonteCarloSimulation
                     }
                     else if (!double.IsNaN(CorrelationLengthX))
                     {
-                        RenormalisedCorrelationLength = CorrelationLengthX;
+                        RenormalisedCorrelationLength = CorrelationLengthX / LatticeLength;
                     }
                     else if (!double.IsNaN(CorrelationLengthY))
                     {
-                        RenormalisedCorrelationLength = CorrelationLengthY;
-                    }
-
-                    if (_measurementsCount <= 1)
-                    {
-                        continue;
+                        RenormalisedCorrelationLength = CorrelationLengthY / LatticeLength;
                     }
                 }
 
@@ -325,6 +323,8 @@ public sealed class IsingMonteCarloSimulation
         MagnetisationAbsolute = 0.0;
         Energy = 0.0;
         Susceptibility = 0.0;
+        CorrelationLengthX = 0.0;
+        CorrelationLengthY = 0.0;
         RenormalisedCorrelationLength = 0.0;
 
         _measurementsCount = 0;

@@ -5,12 +5,13 @@ var dimension = 2;
 var latticeLength = 100;
 var j = -1.0;
 var h = 0.0;
+//var spinUpdateMethod = SpinUpdateMethod.Glauber;
 var spinUpdateMethod = SpinUpdateMethod.Wolff;
-int? randomSeed = null;
+int? randomSeed = 41;
 
-var boltzmannTemperature = 2.29;
-string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_200000000.dat";
-// string? filename = null;
+var boltzmannTemperature = 2.28;
+string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+//string? filename = null;
 
 var singleRunSimulation = new IsingSimulationSingleRun(filename,
                                                        dimension,
@@ -19,13 +20,17 @@ var singleRunSimulation = new IsingSimulationSingleRun(filename,
                                                        j,
                                                        h,
                                                        spinUpdateMethod,
-                                                       randomSeed);
+                                                       randomSeed: randomSeed);
 
-// var thermalisationStepsInLatticeSizeUnit = 20_000;
 var thermalisationStepsInLatticeSizeUnit = 0;
-var iterationStepsBetweenMeasurements = singleRunSimulation.Simulation.TotalSpinsCount * 10;
-var measurementsCount = 10;
-var measurementsRepetitionCount = 10;
+if (filename is null)
+{
+    thermalisationStepsInLatticeSizeUnit = 100_000;
+}
+
+var iterationStepsBetweenMeasurements = singleRunSimulation.Simulation.TotalSpinsCount * 100;
+const int measurementsCount = 50;
+const int measurementsRepetitionCount = 10;
 
 singleRunSimulation.RunWithMeasurements(iterationStepsBetweenMeasurements,
                                  measurementsCount,

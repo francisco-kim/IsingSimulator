@@ -19,7 +19,7 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
         _totalSpinsCount = lattice.TotalSpinsCount;
 
         TotalEnergy = double.NaN;
-        TotalMagnetisation = int.MinValue;
+        TotalMagnetisation = Lattice.Spins.Sum();
     }
 
     public NearestNeighbourNDIsingLattice<int> Lattice { get; }
@@ -51,9 +51,6 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
         double h,
         double? jY = null)
     {
-        var totalEnergy = GetTotalEnergy(j, h, jY);
-        var totalMagnetisation = GetTotalMagnetisation();
-
         TotalEnergy += GetDeltaEnergyOfSite(spinIndex, j, h, jY);
         TotalMagnetisation += -2 * Lattice.Spins[spinIndex];
 

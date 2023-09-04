@@ -17,7 +17,7 @@ public interface IHamiltonian<T> where T : INumber<T>
 
     void FlipSpin(int spinIndex);
 
-    public void FlipSpinWithPropertiesUpdate(
+    void FlipSpinWithPropertiesUpdate(
         int spinIndex,
         double j,
         double h,
