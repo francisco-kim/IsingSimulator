@@ -13,15 +13,11 @@ public sealed class IsingMonteCarloSimulation
     private readonly double _q1;
     private readonly double _q2;
 
-    private double _measurementsCount;
+    private int _measurementsCount;
     private double _magnetisationSum;
     private double _magnetisationSquaredSum;
     private double _magnetisationAbsoluteSum;
     private double _energySum;
-    private double _magnetisationVariance;
-    private double _magnetisationSquaredVariance;
-    private double _magnetisationAbsoluteVariance;
-    private double _energyVariance;
     private double _structureFactorQ1XContributionFromRealSpinQ;
     private double _structureFactorQ1XContributionFromImaginarySpinQ;
     private double _structureFactorQ2XContributionFromRealSpinQ;
@@ -93,22 +89,16 @@ public sealed class IsingMonteCarloSimulation
         CorrelationLengthX = double.NaN;
         CorrelationLengthY = double.NaN;
         RenormalisedCorrelationLength = double.NaN;
-        MagnetisationSigma = double.NaN;
-        MagnetisationSquaredSigma = double.NaN;
-        MagnetisationAbsoluteSigma = double.NaN;
-        EnergySigma = double.NaN;
-        SusceptibilityList = new List<double>();
-        RenormalisedCorrelationLengthList = new List<double>();
 
-        _measurementsCount = 0.0;
+        _measurementsCount = 0;
+        MagnetisationList = new List<double>();
+        MagnetisationSquaredList = new List<double>();
+        MagnetisationAbsoluteList = new List<double>();
+        EnergyList = new List<double>();
         _magnetisationSum = 0.0;
         _magnetisationSquaredSum = 0.0;
         _magnetisationAbsoluteSum = 0.0;
         _energySum = 0.0;
-        _magnetisationVariance = 0.0;
-        _magnetisationSquaredVariance = 0.0;
-        _magnetisationAbsoluteVariance = 0.0;
-        _energyVariance = 0.0;
         _structureFactorQ1XContributionFromRealSpinQ = 0.0;
         _structureFactorQ1XContributionFromImaginarySpinQ = 0.0;
         _structureFactorQ2XContributionFromRealSpinQ = 0.0;
@@ -147,17 +137,13 @@ public sealed class IsingMonteCarloSimulation
 
     public double RenormalisedCorrelationLength { get; private set; }
 
-    public double MagnetisationSigma { get; private set; }
+    public List<double> MagnetisationList { get; private set; }
 
-    public double MagnetisationSquaredSigma { get; private set; }
+    public List<double> MagnetisationSquaredList { get; private set; }
 
-    public double MagnetisationAbsoluteSigma { get; private set; }
+    public List<double> MagnetisationAbsoluteList { get; private set; }
 
-    public double EnergySigma { get; private set; }
-
-    public List<double> SusceptibilityList { get; private set; }
-
-    public List<double> RenormalisedCorrelationLengthList { get; private set; }
+    public List<double> EnergyList { get;  private set; }
 
     public void RunMonteCarlo(
         double beta,
@@ -275,6 +261,11 @@ public sealed class IsingMonteCarloSimulation
                     var magnetisationAbsoluteMeasurement = Math.Abs(magnetisationMeasurement);
                     var energyMeasurement = Hamiltonian.GetAverageEnergy(j, h, jY);
 
+                    MagnetisationList.Add(magnetisationMeasurement);
+                    MagnetisationSquaredList.Add(magnetisationSquaredMeasurement);
+                    MagnetisationAbsoluteList.Add(magnetisationAbsoluteMeasurement);
+                    EnergyList.Add(energyMeasurement);
+
                     _magnetisationSum += magnetisationMeasurement;
                     _magnetisationSquaredSum += magnetisationSquaredMeasurement;
                     _magnetisationAbsoluteSum += magnetisationAbsoluteMeasurement;
@@ -290,42 +281,23 @@ public sealed class IsingMonteCarloSimulation
 
                     Susceptibility = beta * (MagnetisationSquared - MagnetisationAbsolute * MagnetisationAbsolute);
                     (CorrelationLengthX, CorrelationLengthY) = GetCorrelationLengthInXYDirections();
-                    RenormalisedCorrelationLength = (CorrelationLengthX + CorrelationLengthY) / 2.0 / LatticeLength;
+
+                    if (!double.IsNaN(CorrelationLengthX) && !double.IsNaN(CorrelationLengthX))
+                    {
+                        RenormalisedCorrelationLength = (CorrelationLengthX + CorrelationLengthY) / 2.0 / LatticeLength;
+                    }
+                    else if (!double.IsNaN(CorrelationLengthX))
+                    {
+                        RenormalisedCorrelationLength = CorrelationLengthX;
+                    }
+                    else if (!double.IsNaN(CorrelationLengthY))
+                    {
+                        RenormalisedCorrelationLength = CorrelationLengthY;
+                    }
 
                     if (_measurementsCount <= 1)
                     {
                         continue;
-                    }
-
-                    _magnetisationVariance += 1.0 / (_measurementsCount - 1.0)
-                        * (magnetisationMeasurement - Magnetisation)
-                        * (magnetisationMeasurement - Magnetisation);
-                    MagnetisationSigma = Math.Sqrt(_magnetisationVariance);
-
-                    _magnetisationSquaredVariance += 1.0 / (_measurementsCount - 1.0)
-                        * (magnetisationSquaredMeasurement - MagnetisationSquared)
-                        * (magnetisationSquaredMeasurement - MagnetisationSquared);
-                    MagnetisationSquaredSigma = Math.Sqrt(_magnetisationSquaredVariance);
-
-                    _magnetisationAbsoluteVariance += 1.0 / (_measurementsCount - 1.0)
-                        * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute)
-                        * (magnetisationAbsoluteMeasurement - MagnetisationAbsolute);
-                    MagnetisationAbsoluteSigma = Math.Sqrt(_magnetisationVariance);
-
-                    _energyVariance += 1.0 / (_measurementsCount - 1.0)
-                        * (energyMeasurement - Energy)
-                        * (energyMeasurement - Energy);
-                    EnergySigma = Math.Sqrt(_energyVariance);
-                }
-
-                if (!isInfiniteLoop && measurementsCount >= 3)
-                {
-                    if ((iterationCount == totalIterationCount / 3)
-                        || (iterationCount == 2 * totalIterationCount / 3)
-                        || (iterationCount == totalIterationCount - 1))
-                    {
-                        SusceptibilityList.Add(Susceptibility);
-                        RenormalisedCorrelationLengthList.Add(RenormalisedCorrelationLength);
                     }
                 }
 
@@ -354,22 +326,16 @@ public sealed class IsingMonteCarloSimulation
         Energy = 0.0;
         Susceptibility = 0.0;
         RenormalisedCorrelationLength = 0.0;
-        MagnetisationSigma = 0.0;
-        MagnetisationSquaredSigma = 0.0;
-        MagnetisationAbsoluteSigma = 0.0;
-        EnergySigma = 0.0;
-        SusceptibilityList = new List<double>();
-        RenormalisedCorrelationLengthList = new List<double>();
 
-        _measurementsCount = 0.0;
+        _measurementsCount = 0;
+        MagnetisationList = new List<double>();
+        MagnetisationSquaredList = new List<double>();
+        MagnetisationAbsoluteList = new List<double>();
+        EnergyList = new List<double>();
         _magnetisationSum = 0.0;
         _magnetisationSquaredSum = 0.0;
         _magnetisationAbsoluteSum = 0.0;
         _energySum = 0.0;
-        _magnetisationVariance = 0.0;
-        _magnetisationSquaredVariance = 0.0;
-        _magnetisationAbsoluteVariance = 0.0;
-        _energyVariance = 0.0;
         _structureFactorQ1XContributionFromRealSpinQ = 0.0;
         _structureFactorQ1XContributionFromImaginarySpinQ = 0.0;
         _structureFactorQ2XContributionFromRealSpinQ = 0.0;

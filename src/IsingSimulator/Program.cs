@@ -1,17 +1,16 @@
 ﻿using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Services;
 
-
-var boltzmannTemperature = 2.29;
-// string? filename = "100_2.3000_200000000.dat";
-string? filename = null;
-
 var dimension = 2;
 var latticeLength = 100;
 var j = -1.0;
 var h = 0.0;
 var spinUpdateMethod = SpinUpdateMethod.Wolff;
 int? randomSeed = null;
+
+var boltzmannTemperature = 2.29;
+string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_200000000.dat";
+// string? filename = null;
 
 var singleRunSimulation = new IsingSimulationSingleRun(filename,
                                                        dimension,
@@ -22,15 +21,18 @@ var singleRunSimulation = new IsingSimulationSingleRun(filename,
                                                        spinUpdateMethod,
                                                        randomSeed);
 
-var thermalisationStepsInLatticeSizeUnit = 20_000;
-// var thermalisationStepsInLatticeSizeUnit = 0;
-var iterationStepsBetweenMeasurements = singleRunSimulation.Simulation.TotalSpinsCount * 20;
-var measurementsCount = 100;
+// var thermalisationStepsInLatticeSizeUnit = 20_000;
+var thermalisationStepsInLatticeSizeUnit = 0;
+var iterationStepsBetweenMeasurements = singleRunSimulation.Simulation.TotalSpinsCount * 10;
+var measurementsCount = 10;
+var measurementsRepetitionCount = 10;
 
 singleRunSimulation.RunWithMeasurements(iterationStepsBetweenMeasurements,
                                  measurementsCount,
+                                 measurementsRepetitionCount,
                                  thermalisationStepsInLatticeSizeUnit,
-                                 saveLattice: true);
+                                 saveLattice: true,
+                                 saveMeasurements: true);
 
 // else
 // {

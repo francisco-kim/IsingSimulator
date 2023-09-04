@@ -39,6 +39,29 @@ public sealed class IsingSimulationSingleRun
         _randomSeed = randomSeed;
         _spinUpdateMethod = spinUpdateMethod;
 
+        Magnetisation = double.NaN;
+        MagnetisationSquared = double.NaN;
+        MagnetisationAbsolute = double.NaN;
+        Energy = double.NaN;
+        Susceptibility = double.NaN;
+        RenormalisedCorrelationLength = double.NaN;
+
+        MagnetisationSigma = double.NaN;
+        MagnetisationSquaredSigma = double.NaN;
+        MagnetisationAbsoluteSigma = double.NaN;
+        EnergySigma = double.NaN;
+        SusceptibilitySigma = double.NaN;
+        RenormalisedCorrelationLengthSigma = double.NaN;
+
+        MagnetisationList = new List<double>();
+        MagnetisationSquaredList = new List<double>();
+        MagnetisationAbsoluteList = new List<double>();
+        EnergyList = new List<double>();
+        SusceptibilityList = new List<double>();
+        RenormalisedCorrelationLengthList = new List<double>();
+        CorrelationLengthXList = new List<double>();
+        CorrelationLengthYList = new List<double>();
+
         var (initialSpinConfiguration, _, previousIterationCount) =
             SpinConfigurationBuilder.InitialiseLattice(filename,
                                                        dimension,
@@ -53,16 +76,61 @@ public sealed class IsingSimulationSingleRun
 
     public IsingMonteCarloSimulation Simulation { get; }
 
+    public double Magnetisation { get; private set; }
+
+    public double MagnetisationSquared { get; private set; }
+
+    public double MagnetisationAbsolute { get; private set; }
+
+    public double Energy { get; private set; }
+
+    public double Susceptibility { get; private set; }
+
+    public double RenormalisedCorrelationLength { get; private set; }
+
+    public double MagnetisationSigma { get; private set; }
+
+    public double MagnetisationSquaredSigma { get; private set; }
+
+    public double MagnetisationAbsoluteSigma { get; private set; }
+
+    public double EnergySigma { get; private set; }
+
+    public double SusceptibilitySigma { get; private set; }
+
+    public double RenormalisedCorrelationLengthSigma { get; private set; }
+
+    public List<double> MagnetisationList { get; private set; }
+
+    public List<double> MagnetisationSquaredList { get; private set; }
+
+    public List<double> MagnetisationAbsoluteList { get; private set; }
+
+    public List<double> EnergyList { get; private set; }
+ 
+    public List<double> SusceptibilityList { get; private set; }
+
+    public List<double> RenormalisedCorrelationLengthList { get; private set; }
+
+    public List<double> CorrelationLengthXList { get; private set; }
+
+    public List<double> CorrelationLengthYList { get; private set; }
+
     public void RunWithMeasurements(int iterationStepsBetweenMeasurements,
                                     int measurementsCount,
+                                    int measurementsRepetitionCount,
                                     int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
-                                    bool saveLattice = true)
+                                    bool saveLattice = true,
+                                    bool saveMeasurements = true)
     {
         Thermalise(thermalisationStepsInLatticeSizeUnit,
                    _spinUpdateMethod,
                    saveLattice);
 
-        MeasurementsRun(iterationStepsBetweenMeasurements, measurementsCount);
+        MeasurementsRun(iterationStepsBetweenMeasurements,
+                        measurementsCount,
+                        measurementsRepetitionCount,
+                        saveMeasurements);
 
         // if (saveLattice)
         // {
@@ -77,33 +145,72 @@ public sealed class IsingSimulationSingleRun
         // }
     }
 
-    public void MeasurementsRun(int iterationStepsBetweenMeasurements, int measurementsCount)
+    public void MeasurementsRun(int iterationStepsBetweenMeasurements,
+                                int measurementsCount,
+                                int measurementsRepetitionCount,
+                                bool saveMeasurements = true)
     {
-        Simulation.RunMonteCarloWithObservablesComputation(
-            _beta,
-            _j,
-            _h,
-            iterationStepsBetweenMeasurements,
-            measurementsCount,
-            _spinUpdateMethod,
-            _randomSeed);
+        for (int measurementRepetition = 0; measurementRepetition < measurementsRepetitionCount; measurementRepetition++)
+        {
+            Simulation.RunMonteCarloWithObservablesComputation(
+                _beta,
+                _j,
+                _h,
+                iterationStepsBetweenMeasurements,
+                measurementsCount,
+                _spinUpdateMethod,
+                _randomSeed);
 
-        Console.WriteLine($" M  = {Simulation.Magnetisation} +- {Simulation.MagnetisationSigma}");
-        Console.WriteLine($"M^2 = {Simulation.MagnetisationSquared} +- {Simulation.MagnetisationSquaredSigma}");
-        Console.WriteLine($"|M| = {Simulation.MagnetisationAbsolute} +- {Simulation.MagnetisationAbsoluteSigma}");
-        Console.WriteLine($"Chi = {Simulation.Susceptibility}");
-        Console.WriteLine($" Xi = {Simulation.RenormalisedCorrelationLength}\n");
+            MagnetisationList.AddRange(Simulation.MagnetisationList);
+            MagnetisationSquaredList.AddRange(Simulation.MagnetisationSquaredList);
+            MagnetisationAbsoluteList.AddRange(Simulation.MagnetisationAbsoluteList);
+            EnergyList.AddRange(Simulation.EnergyList);
 
-        var susceptibilityList = Simulation.SusceptibilityList.Select(chi => $"{chi}");
-        var renormalisedCorrelationLengthList = Simulation.RenormalisedCorrelationLengthList.Select(xi => $"{xi}");
-        Console.WriteLine($"Chis = " + "{" + string.Join(", ", susceptibilityList) + "}");
-        Console.WriteLine($" Xis = " + "{" + string.Join(", ", renormalisedCorrelationLengthList) + "}");
-        // var correlationLengthListForPrintingX = correlationLengthList.Where(xi => xi.InXDirection is not double.NaN)
-        //                                                              .Select(xi => $"{xi.InXDirection}");
-        // var correlationLengthListForPrintingY = correlationLengthList.Where(xi => xi.InYDirection is not double.NaN)
-        //                                                              .Select(xi => $"{xi.InYDirection}");
-        // Console.WriteLine(
-        //     string.Join(",", correlationLengthListForPrintingX.Concat(correlationLengthListForPrintingY).ToList()));
+            SusceptibilityList.Add(Simulation.Susceptibility);
+
+            if (!double.IsNaN(Simulation.CorrelationLengthX))
+            {
+                CorrelationLengthXList.Add(Simulation.CorrelationLengthX);
+            }
+            if (!double.IsNaN(Simulation.CorrelationLengthY))
+            {
+                CorrelationLengthYList.Add(Simulation.CorrelationLengthY);
+            }
+            if (!double.IsNaN(Simulation.RenormalisedCorrelationLength))
+            {
+                RenormalisedCorrelationLengthList.Add(Simulation.RenormalisedCorrelationLength);
+            }
+        }
+
+        Magnetisation = MagnetisationList.Sum() / MagnetisationList.Count;
+        MagnetisationSigma = Math.Sqrt(GetVariance(MagnetisationList, Magnetisation));
+
+        MagnetisationSquared = MagnetisationSquaredList.Sum() / MagnetisationSquaredList.Count;
+        MagnetisationSquaredSigma = Math.Sqrt(GetVariance(MagnetisationSquaredList, MagnetisationSquared));
+
+        MagnetisationAbsolute = MagnetisationAbsoluteList.Sum() / MagnetisationAbsoluteList.Count;
+        MagnetisationAbsoluteSigma = Math.Sqrt(GetVariance(MagnetisationAbsoluteList, MagnetisationAbsolute));
+
+        Energy = EnergyList.Sum() / EnergyList.Count;
+        EnergySigma = Math.Sqrt(GetVariance(EnergyList, Energy));
+
+        Console.WriteLine($" M  = {Magnetisation} +- {MagnetisationSigma}");
+        Console.WriteLine($"M^2 = {MagnetisationSquared} +- {MagnetisationSquaredSigma}");
+        Console.WriteLine($"|M| = {MagnetisationAbsolute} +- {MagnetisationAbsoluteSigma}");
+
+        Susceptibility = SusceptibilityList.Sum() / SusceptibilityList.Count;
+        SusceptibilitySigma = Math.Sqrt(GetVariance(SusceptibilityList, Susceptibility));
+
+        RenormalisedCorrelationLength = RenormalisedCorrelationLengthList.Sum() / RenormalisedCorrelationLengthList.Count;
+        RenormalisedCorrelationLengthSigma = Math.Sqrt(GetVariance(RenormalisedCorrelationLengthList, RenormalisedCorrelationLength));
+
+        Console.WriteLine($"Chi = {Susceptibility} +- {SusceptibilitySigma}");
+        Console.WriteLine($" Xi = {RenormalisedCorrelationLength} +- {RenormalisedCorrelationLengthSigma}");
+
+        if (saveMeasurements)
+        {
+            SaveMeasurements();
+        }
     }
 
     public void Thermalise(int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
@@ -130,5 +237,39 @@ public sealed class IsingSimulationSingleRun
 
         Console.WriteLine($"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
             + " after thermalisation.\n");
+    }
+
+    private void SaveMeasurements()
+    {
+        var (_, measurementDataDirectory) = LatticeConfigurationSaver.GetFilename(Simulation.Lattice.Spins,
+                                                                                         _temperature,
+                                                                                         iterationCount: 0);
+        measurementDataDirectory = Path.GetFullPath(Path.Combine(measurementDataDirectory, "measurements"));
+
+        if (!Directory.Exists(measurementDataDirectory))
+        {
+            Directory.CreateDirectory(measurementDataDirectory);
+        }
+
+        var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.0000}"));
+
+        var results = new List<string>();
+        results.Add($"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationList) + "}}");
+        results.Add($"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationSquaredList) + "}}");
+        results.Add($"mAbs = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", MagnetisationAbsoluteList) + "}}");
+        results.Add($"energy = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", EnergyList) + "}}");
+        results.Add($"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", SusceptibilityList) + "}}");
+        results.Add($"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", RenormalisedCorrelationLengthList) + "}}");
+
+        File.WriteAllLines(
+            completePathWithoutFileExtension + ".num",
+            results);
+    }
+
+    private static double GetVariance(List<double> measurements, double mean)
+    {
+        var measurementsCount = measurements.Count;
+
+        return 1.0 / (measurementsCount - 1.0) * measurements.Select(m => (m - mean) * (m - mean)).Sum();
     }
 }

@@ -77,7 +77,9 @@ public static class LatticeConfigurationSaver
         return Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data"));
     }
 
-    private static (string Filename, string DataDirectory) GetFilename(List<int> spins, double temperature, int iterationCount)
+    public static (string Filename, string DataDirectory) GetFilename(List<int> spins,
+                                                                      double temperature,
+                                                                      int iterationCount)
     {
         var dataDirectory = GetDataRootDirectory();
 
