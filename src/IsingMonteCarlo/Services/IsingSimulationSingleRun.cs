@@ -124,12 +124,14 @@ public sealed class IsingSimulationSingleRun
         int measurementsRepetitionCount,
         int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
         bool saveLattice = true,
-        bool saveMeasurements = true)
+        bool saveMeasurements = true,
+        bool resetIterationCountDuringSave = false)
     {
         Thermalise(
             thermalisationStepsInLatticeSizeUnit,
             _spinUpdateMethod,
-            saveLattice);
+            saveLattice,
+            resetIterationCountDuringSave);
 
         MeasurementsRun(
             iterationStepsBetweenMeasurements,
@@ -231,7 +233,8 @@ public sealed class IsingSimulationSingleRun
     public void Thermalise(
         int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
         SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
-        bool saveLattice = true)
+        bool saveLattice = true,
+        bool resetIterationCountDuringSave = false)
     {
         Simulation.RunMonteCarlo(
             _beta,
@@ -244,12 +247,15 @@ public sealed class IsingSimulationSingleRun
 
         if (saveLattice)
         {
+            var iterationSteps = resetIterationCountDuringSave ? thermalisationStepsInLatticeSizeUnit
+                                                                 * Simulation.TotalSpinsCount
+                                                                : _previousIterationCount
+                                                                  + thermalisationStepsInLatticeSizeUnit
+                                                                  * Simulation.TotalSpinsCount;
             LatticeConfigurationSaver.SaveLattice(
                 Simulation.Lattice.Spins,
                 _temperature,
-                _previousIterationCount
-              + thermalisationStepsInLatticeSizeUnit
-              * Simulation.TotalSpinsCount,
+                iterationSteps,
                 isBinary: false);
         }
 

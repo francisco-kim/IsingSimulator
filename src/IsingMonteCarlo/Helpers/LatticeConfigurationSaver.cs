@@ -105,11 +105,11 @@ public static class LatticeConfigurationSaver
             Directory.CreateDirectory(dataDirectory);
         }
 
-        var filename = latticeLength.ToString(format: "G10", CultureInfo.InvariantCulture)
+        var filename = latticeLength
                      + "_"
                      + $"{temperature:0.0000}"
                      + "_"
-                     + iterationCount;
+                     + iterationCount.ToString(format: "G10", CultureInfo.InvariantCulture);
 
         return (filename, dataDirectory);
     }

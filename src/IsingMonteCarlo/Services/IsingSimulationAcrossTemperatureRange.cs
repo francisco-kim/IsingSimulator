@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using IsingMonteCarlo.Helpers;
 using IsingMonteCarlo.Models;
 
@@ -5,7 +7,7 @@ namespace IsingMonteCarlo.Services;
 
 public sealed class IsingSimulationAcrossTemperatureRange
 {
-    private const int ThermalisationStepsInLatticeSizeUnit = 20_000;
+    private const int DefaultThermalisationStepsInLatticeSizeUnit = 20_000;
 
     private readonly SpinUpdateMethod _spinUpdateMethod;
     private readonly double _j;
@@ -94,22 +96,45 @@ public sealed class IsingSimulationAcrossTemperatureRange
     public void RunWithMeasurementsAcrossTemperatureRange(
         IEnumerable<double> temperatures,
         int iterationStepsBetweenMeasurements,
-        int measurementsCount = 10,
-        int measurementsRepetitionCount = 10,
-        int thermalisationStepsInLatticeSizeUnit = 20_000,
+        int measurementsCount = 20,
+        int measurementsRepetitionCount = 20,
+        int thermalisationStepsInLatticeSizeUnit = 100_000,
+        string prethermalisedFirstLatticeFile = "",
+        bool usePreviousTemperatureSpinsAsInitialConfiguration = true,
         bool loadFile = false,
         bool saveLattice = true,
         bool saveMeasurements = true)
     {
         var enumeratedTemperatures = temperatures?.ToList() ?? throw new ArgumentNullException(nameof(temperatures));
 
+        var iterationCount = 0;
+        var previousTemperature = 0.0;
+        var thermalisationMonteCarloSweepCount = thermalisationStepsInLatticeSizeUnit;
         foreach (var temperature in enumeratedTemperatures)
         {
-            //$"{latticeLength}_{boltzmannTemperature:0.0000}_200000000.dat"
             string? filename = null;
-            if (loadFile)
+            if (loadFile && prethermalisedFirstLatticeFile is "")
             {
-                LatticeConfigurationSaver.GetFirstDataFileWithLatticeSizeAndTemperature(_latticeLength, temperature);
+                filename = LatticeConfigurationSaver.GetFirstDataFileWithLatticeSizeAndTemperature(
+                    _latticeLength,
+                    temperature);
+            }
+            else if (prethermalisedFirstLatticeFile is not "")
+            {
+                var dataDirectory = LatticeConfigurationSaver.GetDataRootDirectory();
+
+                if (iterationCount is 0)
+                {
+                    filename = Path.GetFullPath(Path.Combine(dataDirectory, prethermalisedFirstLatticeFile));
+                    thermalisationStepsInLatticeSizeUnit = 0;
+                }
+                else
+                {
+                    filename = LoadExistingFileOrThermaliseFromPreviousTemperatureConfiguration(
+                        dataDirectory,
+                        temperature,
+                        thermalisationStepsInLatticeSizeUnit);
+                }
             }
 
             var singleRunSimulation = new IsingSimulationSingleRun(
@@ -123,11 +148,6 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 _jY,
                 randomSeed: _randomSeed);
 
-            if (loadFile)
-            {
-                thermalisationStepsInLatticeSizeUnit = 0;
-            }
-
             // iterationStepsBetweenMeasurements (suggested): _totalSpinsCount * [20, 100]
             singleRunSimulation.RunWithMeasurements(
                 iterationStepsBetweenMeasurements,
@@ -135,20 +155,60 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 measurementsRepetitionCount,
                 thermalisationStepsInLatticeSizeUnit,
                 saveLattice,
-                saveMeasurements);
+                saveMeasurements,
+                resetIterationCountDuringSave: true);
 
             CalculateExpectationValues(singleRunSimulation, temperature);
             ResetObservables();
 
-            Console.WriteLine($"Run with T={temperature} completed.");
+            Console.WriteLine($"\nRun with T={temperature} completed.\n");
+
+            thermalisationStepsInLatticeSizeUnit = thermalisationMonteCarloSweepCount;
+            previousTemperature = temperature;
+
+            ++iterationCount;
         }
 
         SaveMeasurements(enumeratedTemperatures);
+
+        string LoadExistingFileOrThermaliseFromPreviousTemperatureConfiguration(
+            string dataDirectory,
+            double temperature,
+            int thermalisationStepsInLatticeSizeUnit)
+        {
+            var thermalisationIterationCount =
+                thermalisationStepsInLatticeSizeUnit * _latticeLength * _latticeLength;
+            var currentTemperatureLatticeFile =
+                Path.GetFullPath(
+                    Path.Combine(
+                        dataDirectory,
+                        $"{_latticeLength}_{temperature:0.0000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
+            var previousTemperatureLatticeFile =
+                Path.GetFullPath(
+                    Path.Combine(
+                        dataDirectory,
+                        $"{_latticeLength}_{previousTemperature:0.0000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
+
+            var filenameToLoad = "";
+            if (File.Exists(currentTemperatureLatticeFile))
+            {
+                filenameToLoad = currentTemperatureLatticeFile;
+                thermalisationStepsInLatticeSizeUnit = 0;
+            }
+
+            if (File.Exists(previousTemperatureLatticeFile)
+             && usePreviousTemperatureSpinsAsInitialConfiguration)
+            {
+                filenameToLoad = previousTemperatureLatticeFile;
+            }
+
+            return filenameToLoad;
+        }
     }
 
     public void ThermaliseAcrossTemperatureRange(
         IEnumerable<double> temperatures,
-        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
+        int thermalisationStepsInLatticeSizeUnit = DefaultThermalisationStepsInLatticeSizeUnit,
         SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff)
     {
         var enumeratedTemperatures = temperatures?.ToList() ?? throw new ArgumentNullException(nameof(temperatures));
@@ -171,7 +231,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 _spinUpdateMethod,
                 saveLattice: true);
 
-            Console.WriteLine($"Run with T={temperature} completed.");
+            Console.WriteLine($"Run with T={temperature} completed.\n");
         }
     }
 

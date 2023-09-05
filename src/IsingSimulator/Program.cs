@@ -1,44 +1,92 @@
 ﻿using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Services;
 
+var isSingleRun = false;
+
 var dimension = 2;
 var latticeLength = 100;
+var totalSpinsCount = latticeLength * latticeLength;
 var j = -1.0;
 var h = 0.0;
-//var spinUpdateMethod = SpinUpdateMethod.Glauber;
-var spinUpdateMethod = SpinUpdateMethod.Wolff;
+var spinUpdateMethod = SpinUpdateMethod.Glauber;
+//var spinUpdateMethod = SpinUpdateMethod.Wolff;
 int? randomSeed = 41;
 
-var boltzmannTemperature = 2.28;
-string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
-//string? filename = null;
+var boltzmannTemperature = 2.26;
 
-var singleRunSimulation = new IsingSimulationSingleRun(filename,
-                                                       dimension,
-                                                       latticeLength,
-                                                       boltzmannTemperature,
-                                                       j,
-                                                       h,
-                                                       spinUpdateMethod,
-                                                       randomSeed: randomSeed);
+var iterationStepsBetweenMeasurements = totalSpinsCount * 20;
+const int measurementsCount = 20;
+const int measurementsRepetitionCount = 20;
 
-var thermalisationStepsInLatticeSizeUnit = 0;
-if (filename is null)
+if (isSingleRun)
 {
-    thermalisationStepsInLatticeSizeUnit = 100_000;
+    //string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+    string? filename = null;
+
+    var thermalisationStepsInLatticeSizeUnit = 0;
+    if (filename is null)
+    {
+        thermalisationStepsInLatticeSizeUnit = 100_000;
+    }
+
+    var singleRunSimulation = new IsingSimulationSingleRun(filename,
+                                                           dimension,
+                                                           latticeLength,
+                                                           boltzmannTemperature,
+                                                           j,
+                                                           h,
+                                                           spinUpdateMethod,
+                                                           randomSeed: randomSeed);
+
+    singleRunSimulation.RunWithMeasurements(iterationStepsBetweenMeasurements,
+                                     measurementsCount,
+                                     measurementsRepetitionCount,
+                                     thermalisationStepsInLatticeSizeUnit,
+                                     saveLattice: true,
+                                     saveMeasurements: true);
 }
+else
+{
 
-var iterationStepsBetweenMeasurements = singleRunSimulation.Simulation.TotalSpinsCount * 100;
-const int measurementsCount = 50;
-const int measurementsRepetitionCount = 10;
+    var prethermalisedLatticeFile = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+    var thermalisationStepsInLatticeSizeUnit = 100_000;
 
-singleRunSimulation.RunWithMeasurements(iterationStepsBetweenMeasurements,
-                                 measurementsCount,
-                                 measurementsRepetitionCount,
-                                 thermalisationStepsInLatticeSizeUnit,
-                                 saveLattice: true,
-                                 saveMeasurements: true);
+    var rangeCount = 8;
+    //var deltaTemperature = 0.005;
+    //var temperatures = Enumerable.Range(0, rangeCount)
+    //                             .Select(i => Math.Round((0.005 * i + 2.26) / deltaTemperature) * deltaTemperature);
+    var temperatures = new List<double>()
+    {
+        2.26,
+        2.265,
+        2.27,
+        2.275,
+        2.28,
+        2.285,
+        2.29,
+        2.295
+    };
 
+    var temperatureRangeSimulation = new IsingSimulationAcrossTemperatureRange(
+        dimension,
+        latticeLength,
+        j,
+        h,
+        spinUpdateMethod,
+        randomSeed: randomSeed);
+
+    temperatureRangeSimulation.RunWithMeasurementsAcrossTemperatureRange(
+        temperatures,
+        iterationStepsBetweenMeasurements,
+        measurementsCount,
+        measurementsRepetitionCount,
+        thermalisationStepsInLatticeSizeUnit,
+        prethermalisedLatticeFile,
+        usePreviousTemperatureSpinsAsInitialConfiguration: true,
+        loadFile: true,
+        saveLattice: true,
+        saveMeasurements: true);
+}
 // else
 // {
 //     var criticalRangeCount = 8;
