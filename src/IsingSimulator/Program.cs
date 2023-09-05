@@ -1,7 +1,10 @@
-﻿using IsingMonteCarlo.Models;
+﻿using IsingMonteCarlo.Helpers;
+using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Services;
 
+var generatePNG = true;
 var isSingleRun = false;
+var thermaliseAcrossTemperatureRange = true;
 
 var dimension = 2;
 var latticeLength = 100;
@@ -12,11 +15,28 @@ var spinUpdateMethod = SpinUpdateMethod.Glauber;
 //var spinUpdateMethod = SpinUpdateMethod.Wolff;
 int? randomSeed = 41;
 
-var boltzmannTemperature = 2.26;
+var boltzmannTemperature = 2.28;
 
 var iterationStepsBetweenMeasurements = totalSpinsCount * 20;
 const int measurementsCount = 20;
 const int measurementsRepetitionCount = 20;
+
+if (generatePNG)
+{
+    string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+
+    var (initialSpinConfiguration, _, _) =
+        SpinConfigurationBuilder.InitialiseLattice(
+            filename,
+            dimension,
+            latticeLength);
+
+    var bitmap = DrawHelper.FromTwoDimIntArrayGray(initialSpinConfiguration);
+    var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
+    DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}");
+
+    Environment.Exit(0);
+}
 
 if (isSingleRun)
 {
@@ -44,6 +64,10 @@ if (isSingleRun)
                                      thermalisationStepsInLatticeSizeUnit,
                                      saveLattice: true,
                                      saveMeasurements: true);
+
+    var bitmap = DrawHelper.FromTwoDimIntArrayGray(singleRunSimulation.Simulation.Lattice.Spins);
+    var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
+    DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}");
 }
 else
 {
@@ -75,6 +99,16 @@ else
         spinUpdateMethod,
         randomSeed: randomSeed);
 
+    if (thermaliseAcrossTemperatureRange)
+    {
+        temperatureRangeSimulation.ThermaliseAcrossTemperatureRange(
+            temperatures,
+            thermalisationStepsInLatticeSizeUnit,
+            spinUpdateMethod);
+
+        Environment.Exit(0);
+    }
+
     temperatureRangeSimulation.RunWithMeasurementsAcrossTemperatureRange(
         temperatures,
         iterationStepsBetweenMeasurements,
@@ -86,6 +120,7 @@ else
         loadFile: true,
         saveLattice: true,
         saveMeasurements: true);
+
 }
 // else
 // {

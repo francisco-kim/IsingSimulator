@@ -231,6 +231,10 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 _spinUpdateMethod,
                 saveLattice: true);
 
+            var bitmap = DrawHelper.FromTwoDimIntArrayGray(singleRunSimulation.Simulation.Lattice.Spins);
+            var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
+            DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.0000}");
+
             Console.WriteLine($"Run with T={temperature} completed.\n");
         }
     }
