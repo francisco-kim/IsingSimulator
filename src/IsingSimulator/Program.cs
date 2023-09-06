@@ -54,9 +54,9 @@ int? randomSeed = 41;
 //var spinUpdateMethod = SpinUpdateMethod.Glauber;
 //var spinUpdateMethod = SpinUpdateMethod.Wolff;
 
-var iterationStepsBetweenMeasurements = totalSpinsCount * 5;
-const int measurementsCount = 40;
-const int measurementsRepetitionCount = 30;
+var iterationNeededForSingleChiXiMeasurement = totalSpinsCount / 2;
+const int measurementsCountForChiXiExpectationValue = 200;
+const int measurementsRepetitionCountForChiXiVariance = 5;
 
 if (choice == 0 || choice == 1)
 {
@@ -78,9 +78,9 @@ if (choice == 0 || choice == 1)
     if (choice == 0)
     {
         singleRunSimulation.RunWithMeasurements(
-            iterationStepsBetweenMeasurements,
-            measurementsCount,
-            measurementsRepetitionCount,
+            iterationNeededForSingleChiXiMeasurement,
+            measurementsCountForChiXiExpectationValue,
+            measurementsRepetitionCountForChiXiVariance,
             thermalisationStepsInLatticeSizeUnit,
             saveLattice: true,
             saveMeasurements: true);
@@ -135,9 +135,9 @@ if (choice == 2 || choice == 3)
 
     temperatureRangeSimulation.RunWithMeasurementsAcrossTemperatureRange(
         temperatures,
-        iterationStepsBetweenMeasurements,
-        measurementsCount,
-        measurementsRepetitionCount,
+        iterationNeededForSingleChiXiMeasurement,
+        measurementsCountForChiXiExpectationValue,
+        measurementsRepetitionCountForChiXiVariance,
         thermalisationStepsInLatticeSizeUnit,
         prethermalisedLatticeFile,
         usePreviousTemperatureSpinsAsInitialConfiguration: true,

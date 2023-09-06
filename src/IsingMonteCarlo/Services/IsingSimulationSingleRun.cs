@@ -119,9 +119,9 @@ public sealed class IsingSimulationSingleRun
     public List<double> CorrelationLengthYList { get; }
 
     public void RunWithMeasurements(
-        int iterationStepsBetweenMeasurements,
-        int measurementsCount,
-        int measurementsRepetitionCount,
+        int iterationsNeededForSingleChiXiMeasurement = 5000,
+        int measurementsCountForChiXiExpectationValue = 200,
+        int measurementsRepetitionCountForChiXiVariance = 5,
         int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
         bool saveLattice = true,
         bool saveMeasurements = true,
@@ -134,9 +134,9 @@ public sealed class IsingSimulationSingleRun
             resetIterationCountDuringSave);
 
         MeasurementsRun(
-            iterationStepsBetweenMeasurements,
-            measurementsCount,
-            measurementsRepetitionCount,
+            iterationsNeededForSingleChiXiMeasurement,
+            measurementsCountForChiXiExpectationValue,
+            measurementsRepetitionCountForChiXiVariance,
             saveMeasurements);
 
         // if (saveLattice)
@@ -153,21 +153,21 @@ public sealed class IsingSimulationSingleRun
     }
 
     public void MeasurementsRun(
-        int iterationStepsBetweenMeasurements,
-        int measurementsCount,
-        int measurementsRepetitionCount,
+        int iterationNeededForSingleChiXiMeasurement,
+        int measurementsCountForChiXiExpectationValue,
+        int measurementsRepetitionCountForChiXiVariance,
         bool saveMeasurements = true)
     {
         for (var measurementRepetition = 0;
-             measurementRepetition < measurementsRepetitionCount;
+             measurementRepetition < measurementsRepetitionCountForChiXiVariance;
              measurementRepetition++)
         {
             Simulation.RunMonteCarloWithObservablesComputation(
                 _beta,
                 _j,
                 _h,
-                iterationStepsBetweenMeasurements,
-                measurementsCount,
+                iterationNeededForSingleChiXiMeasurement,
+                measurementsCountForChiXiExpectationValue,
                 _spinUpdateMethod,
                 _jY,
                 _randomSeed);

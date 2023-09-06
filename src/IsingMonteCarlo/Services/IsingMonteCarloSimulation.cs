@@ -199,8 +199,8 @@ public sealed class IsingMonteCarloSimulation
         double beta,
         double j,
         double h,
-        int iterationStepsBetweenMeasurements,
-        int measurementsCount,
+        int iterationsNeededForSingleChiXiMeasurement,
+        int measurementsCountForChiXiExpectationValue,
         SpinUpdateMethod spinUpdateMethod,
         double? jY = null,
         int? randomSeed = null)
@@ -229,19 +229,19 @@ public sealed class IsingMonteCarloSimulation
             };
         }
 
-        if (iterationStepsBetweenMeasurements <= 0)
+        if (iterationsNeededForSingleChiXiMeasurement <= 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(iterationStepsBetweenMeasurements),
-                "The observables cannot be computed less than every one step.");
+                nameof(iterationsNeededForSingleChiXiMeasurement),
+                "The observables xi and chi cannot be computed in less than two steps - the expectation value/average is needed.");
         }
 
         ResetObservables();
 
-        var totalIterationCount = iterationStepsBetweenMeasurements * measurementsCount;
+        var totalIterationCount = iterationsNeededForSingleChiXiMeasurement * measurementsCountForChiXiExpectationValue;
         var iterationCount = 0;
 
-        if (measurementsCount is 0)
+        if (measurementsCountForChiXiExpectationValue is 0)
         {
             iterateWithObservablesMeasurements(isInfiniteLoop: true);
         }
@@ -255,7 +255,7 @@ public sealed class IsingMonteCarloSimulation
             {
                 _spinDynamics.FlipSpin(beta, j, h, jY);
 
-                if (iterationCount % iterationStepsBetweenMeasurements == 0)
+                if (iterationCount % iterationsNeededForSingleChiXiMeasurement == 0)
                 {
                     var magnetisationMeasurement = Hamiltonian.GetAverageMagnetisation(j, h, jY);
                     var magnetisationSquaredMeasurement = magnetisationMeasurement * magnetisationMeasurement;
@@ -303,7 +303,7 @@ public sealed class IsingMonteCarloSimulation
 
                 if (isInfiniteLoop)
                 {
-                    if (iterationCount >= int.MaxValue || measurementsCount >= 1000)
+                    if (iterationCount >= int.MaxValue || measurementsCountForChiXiExpectationValue >= 1000)
                     {
                         iterationCount = 0;
                     }
