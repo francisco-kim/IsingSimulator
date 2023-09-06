@@ -12,13 +12,13 @@ public static class SpinConfigurationBuilder
     {
         if (filename is not null)
         {
-            var dataDirectory = LatticeConfigurationSaver.GetDataRootDirectory();
+            var dataDirectory = FileHelpers.GetDataRootDirectory();
             // var firstFileName = new DirectoryInfo(dataDirectory).EnumerateFiles()
             //                                                     .Select(file => file.FullName)
             //                                                     .FirstOrDefault();
-            var fullPathWithFilename = Path.GetFullPath(Path.Combine(dataDirectory, filename));
+            var fullPathWithFilename = FileHelpers.GetFullPathWithFilename(filename);
 
-            var spinConfiguration =  LatticeConfigurationSaver.LoadLattice(fullPathWithFilename,
+            var spinConfiguration =  FileHelpers.LoadSpinConfiguration(fullPathWithFilename,
                                                          out var boltzmannTemperature,
                                                          out var previousIterationCount);
 
@@ -33,8 +33,8 @@ public static class SpinConfigurationBuilder
     }
 
     public static List<int> InitialiseRandomLattice(int totalSpinsCount,
-                                       double initialSpinDownRatio,
-                                       int? randomSeed = null)
+                                                    double initialSpinDownRatio,
+                                                    int? randomSeed = null)
     {
         if (totalSpinsCount < 1)
         {

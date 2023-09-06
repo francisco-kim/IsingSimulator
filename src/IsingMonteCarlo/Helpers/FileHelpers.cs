@@ -1,13 +1,15 @@
 ﻿using System.Globalization;
 
+using IsingMonteCarlo.Representations;
+
 namespace IsingMonteCarlo.Helpers;
 
-public static class LatticeConfigurationSaver
+public static class FileHelpers
 {
-    public static void SaveLattice(
+    public static void SaveSpinConfiguration(
         IEnumerable<int> spins,
         double temperature,
-        int iterationCount,
+        long iterationCount,
         bool isBinary = false)
     {
         var enumeratedSpins = spins.ToList() ?? throw new ArgumentException(nameof(spins));
@@ -30,9 +32,12 @@ public static class LatticeConfigurationSaver
                 writer.Write(item);
             }
         }
+
+        Console.WriteLine(
+            $"Filename: {completePathWithoutFileExtension}\n");
     }
 
-    public static List<int> LoadLattice(
+    public static List<int> LoadSpinConfiguration(
         string filename,
         out double temperature,
         out int iterationCount)
@@ -60,6 +65,14 @@ public static class LatticeConfigurationSaver
         return result;
     }
 
+    public static NearestNeighbourNDIsingLattice<int> LoadLattice(string filename, int dimension)
+    {
+        var spinConfiguration = LoadSpinConfiguration(GetFullPathWithFilename(filename), out _, out _);
+        var latticeLength = Convert.ToInt32(Math.Pow(spinConfiguration.Count, 1.0 / dimension));
+
+        return new NearestNeighbourNDIsingLattice<int>(dimension, latticeLength, spinConfiguration);
+    }
+
     public static string GetFirstDataFileWithLatticeSizeAndTemperature(int latticeLength, double temperature)
     {
         var dataDirectory = GetDataRootDirectory();
@@ -74,6 +87,9 @@ public static class LatticeConfigurationSaver
         return firstFileName.FullName;
     }
 
+    public static string GetFullPathWithFilename(string filename) =>
+        Path.GetFullPath(Path.Combine(GetDataRootDirectory(), filename));
+
     public static string GetDataRootDirectory()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
@@ -87,7 +103,7 @@ public static class LatticeConfigurationSaver
 
     public static (string Filename, string DataDirectory) GetFilename(List<int> spins,
                                                                       double temperature,
-                                                                      int iterationCount)
+                                                                      long iterationCount)
     {
         var latticeLength = Convert.ToInt32(Math.Sqrt(spins.Count));
 
@@ -96,7 +112,7 @@ public static class LatticeConfigurationSaver
 
     public static (string Filename, string DataDirectory) GetFilename(int latticeLength,
                                                                       double temperature,
-                                                                      int iterationCount)
+                                                                      long iterationCount)
     {
         var dataDirectory = GetDataRootDirectory();
 
@@ -114,7 +130,7 @@ public static class LatticeConfigurationSaver
         return (filename, dataDirectory);
     }
 
-    private static List<string> GetFilenameData(string filename)
+    public static List<string> GetFilenameData(string filename)
     {
         char[] delimiters = { '_', '.' };
         var filenameData = filename.Split(delimiters).ToList();

@@ -252,7 +252,40 @@ public sealed class IsingSimulationSingleRun
                                                                 : _previousIterationCount
                                                                   + thermalisationStepsInLatticeSizeUnit
                                                                   * Simulation.TotalSpinsCount;
-            LatticeConfigurationSaver.SaveLattice(
+            FileHelpers.SaveSpinConfiguration(
+                Simulation.Lattice.Spins,
+                _temperature,
+                iterationSteps,
+                isBinary: false);
+        }
+
+        Console.WriteLine(
+            $"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
+          + " after thermalisation.");
+    }
+
+    public void ThermaliseLargeLattice(
+        long thermalisationSteps100MCSweepUnit = 1,
+        SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
+        bool saveLattice = true,
+        bool resetIterationCountDuringSave = false)
+    {
+        Simulation.RunMonteCarlo(
+            _beta,
+            _j,
+            _h,
+            thermalisationSteps100MCSweepUnit * 100 * Simulation.TotalSpinsCount,
+            spinUpdateMethod,
+            _jY,
+            _randomSeed);
+
+        if (saveLattice)
+        {
+            var iterationSteps = resetIterationCountDuringSave
+                                     ? thermalisationSteps100MCSweepUnit
+                                     : _previousIterationCount
+                                     + thermalisationSteps100MCSweepUnit;
+            FileHelpers.SaveSpinConfiguration(
                 Simulation.Lattice.Spins,
                 _temperature,
                 iterationSteps,
@@ -266,7 +299,7 @@ public sealed class IsingSimulationSingleRun
 
     private void SaveMeasurements()
     {
-        var (_, measurementDataDirectory) = LatticeConfigurationSaver.GetFilename(
+        var (_, measurementDataDirectory) = FileHelpers.GetFilename(
             Simulation.Lattice.Spins,
             _temperature,
             iterationCount: 0);

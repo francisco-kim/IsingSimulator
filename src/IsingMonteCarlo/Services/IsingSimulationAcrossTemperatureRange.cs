@@ -110,18 +110,19 @@ public sealed class IsingSimulationAcrossTemperatureRange
         var iterationCount = 0;
         var previousTemperature = 0.0;
         var thermalisationMonteCarloSweepCount = thermalisationStepsInLatticeSizeUnit;
+
         foreach (var temperature in enumeratedTemperatures)
         {
             string? filename = null;
             if (loadFile && prethermalisedFirstLatticeFile is "")
             {
-                filename = LatticeConfigurationSaver.GetFirstDataFileWithLatticeSizeAndTemperature(
+                filename = FileHelpers.GetFirstDataFileWithLatticeSizeAndTemperature(
                     _latticeLength,
                     temperature);
             }
             else if (prethermalisedFirstLatticeFile is not "")
             {
-                var dataDirectory = LatticeConfigurationSaver.GetDataRootDirectory();
+                var dataDirectory = FileHelpers.GetDataRootDirectory();
 
                 if (iterationCount is 0)
                 {
@@ -132,8 +133,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 {
                     filename = LoadExistingFileOrThermaliseFromPreviousTemperatureConfiguration(
                         dataDirectory,
-                        temperature,
-                        thermalisationStepsInLatticeSizeUnit);
+                        temperature);
                 }
             }
 
@@ -159,6 +159,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 resetIterationCountDuringSave: true);
 
             CalculateExpectationValues(singleRunSimulation, temperature);
+
             ResetObservables();
 
             Console.WriteLine($"\nRun with T={temperature} completed.\n");
@@ -173,8 +174,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
         string LoadExistingFileOrThermaliseFromPreviousTemperatureConfiguration(
             string dataDirectory,
-            double temperature,
-            int thermalisationStepsInLatticeSizeUnit)
+            double temperature)
         {
             var thermalisationIterationCount =
                 thermalisationStepsInLatticeSizeUnit * _latticeLength * _latticeLength;
@@ -231,9 +231,9 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 _spinUpdateMethod,
                 saveLattice: true);
 
-            var bitmap = DrawHelper.FromTwoDimIntArrayGray(singleRunSimulation.Simulation.Lattice.Spins);
-            var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
-            DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.0000}");
+            var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
+            var resizedBitmap = DrawHelpers.ResizeBitmap(bitmap, 512, 512);
+            DrawHelpers.SaveBitmapAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.0000}", resize: false);
 
             Console.WriteLine($"Run with T={temperature} completed.\n");
         }
@@ -276,7 +276,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
     private void SaveMeasurements(List<double> temperatures)
     {
-        var (_, measurementDataDirectory) = LatticeConfigurationSaver.GetFilename(
+        var (_, measurementDataDirectory) = FileHelpers.GetFilename(
             _latticeLength,
             temperature: 0.0,
             iterationCount: 0);
@@ -295,12 +295,12 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
         var results = new List<string>
         {
-            "m = " + "{" + string.Join(", ", "{" + MagnetisationList.Select(el => string.Join(", ", el)) + "}") + "}",
-            "mSquared = " + "{" + string.Join(", ", "{" + MagnetisationSquaredList.Select(el => string.Join(", ", el)) + "}") + "}",
-            "mAbs = " + "{" + string.Join(", ", "{" + MagnetisationAbsoluteList.Select(el => string.Join(", ", el)) + "}") + "}",
-            "energy = " + "{" + string.Join(", ", "{" + EnergyList.Select(el => string.Join(", ", el)) + "}") + "}",
-            "chi = " + "{" + string.Join(", ", "{" + SusceptibilityList.Select(el => string.Join(", ", el)) + "}") + "}",
-            "xi = " + "{" + string.Join(", ", "{" + RenormalisedCorrelationLengthList.Select(el => string.Join(", ", el)) + "}") + "}"
+            "m = " + "{" + string.Join(", ", MagnetisationList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+            "mSquared = " + "{" + string.Join(", ", MagnetisationSquaredList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+            "mAbs = " + "{" + string.Join(", ", MagnetisationAbsoluteList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+            "energy = " + "{" + string.Join(", ", EnergyList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+            "chi = " + "{" + string.Join(", ", SusceptibilityList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+            "xi = " + "{" + string.Join(", ", RenormalisedCorrelationLengthList.Select(el => "{" + string.Join(", ", el) + "}")) + "}"
         };
 
         File.WriteAllLines(
@@ -323,13 +323,6 @@ public sealed class IsingSimulationAcrossTemperatureRange
         EnergySigma = double.NaN;
         SusceptibilitySigma = double.NaN;
         RenormalisedCorrelationLengthSigma = double.NaN;
-
-        MagnetisationList = new List<List<double>>();
-        MagnetisationSquaredList = new List<List<double>>();
-        MagnetisationAbsoluteList = new List<List<double>>();
-        EnergyList = new List<List<double>>();
-        SusceptibilityList = new List<List<double>>();
-        RenormalisedCorrelationLengthList = new List<List<double>>();
     }
 
     private static double GetVariance(List<double> measurements, double mean)

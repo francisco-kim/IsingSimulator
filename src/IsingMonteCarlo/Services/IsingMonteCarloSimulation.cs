@@ -149,7 +149,7 @@ public sealed class IsingMonteCarloSimulation
         double beta,
         double j,
         double h,
-        int? iterationLimit,
+        long? iterationLimit,
         SpinUpdateMethod spinUpdateMethod,
         double? jY = null,
         int? randomSeed = null)

@@ -2,52 +2,69 @@
 using IsingMonteCarlo.Models;
 using IsingMonteCarlo.Services;
 
-var generatePNG = true;
-var isSingleRun = false;
-var thermaliseAcrossTemperatureRange = true;
+//if (args.Length != 1)
+//{
+//    throw new ArgumentException(nameof(args));
+//}
+
+//var choice = Convert.ToInt32(args.First());
+Console.WriteLine("0: single Monte Carlo run");
+Console.WriteLine("1: Thermalisation (single run)");
+Console.WriteLine("2: Monte Carlo run across temperature-range");
+Console.WriteLine("3: Thermalisation across temperature-range");
+Console.WriteLine("4: Generate png image");
+Console.WriteLine("5: Renormalise png image");
+Console.WriteLine("6: Continue thermalisation of 3^11\n");
+Console.Write("Choice: ");
+
+//var choice = 1;
+var choice = Convert.ToInt32(Console.ReadLine());
+
+var latticeLength = 19683;
+var boltzmannTemperature = 2.2692;
+var spinUpdateMethod = SpinUpdateMethod.Wolff;
+if (choice is not 6)
+{
+    //var latticeLength = 19683;
+    Console.Write("Lattice length: ");
+    var latticeLengthInput = Console.ReadLine();
+    // T = 2.2691853 = 2 / ln(1 + sqrt(2));
+    latticeLength = latticeLengthInput is "" ? latticeLength : Convert.ToInt32(latticeLengthInput);
+    Console.Write($"{latticeLength}\n");
+
+    //var boltzmannTemperature = 2.0;
+    Console.Write("Temperature: ");
+    var temperatureInput = Console.ReadLine();
+    // T = 2.2691853 = 2 / ln(1 + sqrt(2));
+    boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToInt32(temperatureInput);
+    Console.Write($"{boltzmannTemperature}\n");
+
+    //var spinUpdateMethod = SpinUpdateMethod.Wolff;
+    Console.Write("(g)lauber or (w)olff: ");
+    var spinUpdateMethodInput = Console.ReadLine();
+    spinUpdateMethod = spinUpdateMethodInput is "w" ? spinUpdateMethod : SpinUpdateMethod.Glauber;
+    Console.Write($"{spinUpdateMethodInput}\n");
+}
 
 var dimension = 2;
-var latticeLength = 100;
 var totalSpinsCount = latticeLength * latticeLength;
 var j = -1.0;
 var h = 0.0;
-var spinUpdateMethod = SpinUpdateMethod.Glauber;
-//var spinUpdateMethod = SpinUpdateMethod.Wolff;
 int? randomSeed = 41;
+//var spinUpdateMethod = SpinUpdateMethod.Glauber;
+//var spinUpdateMethod = SpinUpdateMethod.Wolff;
 
-var boltzmannTemperature = 2.28;
+var iterationStepsBetweenMeasurements = totalSpinsCount * 5;
+const int measurementsCount = 40;
+const int measurementsRepetitionCount = 30;
 
-var iterationStepsBetweenMeasurements = totalSpinsCount * 20;
-const int measurementsCount = 20;
-const int measurementsRepetitionCount = 20;
-
-if (generatePNG)
-{
-    string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
-
-    var (initialSpinConfiguration, _, _) =
-        SpinConfigurationBuilder.InitialiseLattice(
-            filename,
-            dimension,
-            latticeLength);
-
-    var bitmap = DrawHelper.FromTwoDimIntArrayGray(initialSpinConfiguration);
-    var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
-    DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}");
-
-    Environment.Exit(0);
-}
-
-if (isSingleRun)
+if (choice == 0 || choice == 1)
 {
     //string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
     string? filename = null;
 
-    var thermalisationStepsInLatticeSizeUnit = 0;
-    if (filename is null)
-    {
-        thermalisationStepsInLatticeSizeUnit = 100_000;
-    }
+    var thermalisationStepsInLatticeSizeUnit =
+        (filename is null) ? 100_000 : 0;
 
     var singleRunSimulation = new IsingSimulationSingleRun(filename,
                                                            dimension,
@@ -58,20 +75,27 @@ if (isSingleRun)
                                                            spinUpdateMethod,
                                                            randomSeed: randomSeed);
 
-    singleRunSimulation.RunWithMeasurements(iterationStepsBetweenMeasurements,
-                                     measurementsCount,
-                                     measurementsRepetitionCount,
-                                     thermalisationStepsInLatticeSizeUnit,
-                                     saveLattice: true,
-                                     saveMeasurements: true);
+    if (choice == 0)
+    {
+        singleRunSimulation.RunWithMeasurements(
+            iterationStepsBetweenMeasurements,
+            measurementsCount,
+            measurementsRepetitionCount,
+            thermalisationStepsInLatticeSizeUnit,
+            saveLattice: true,
+            saveMeasurements: true);
 
-    var bitmap = DrawHelper.FromTwoDimIntArrayGray(singleRunSimulation.Simulation.Lattice.Spins);
-    var resizedBitmap = DrawHelper.ResizeToLargerBitmap(bitmap, 512, 512);
-    DrawHelper.SaveBmpAsPNG(resizedBitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}");
+        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
+
+        DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}", resize: false);
+    }
+    else
+    {
+        singleRunSimulation.Thermalise(thermalisationStepsInLatticeSizeUnit, spinUpdateMethod, saveLattice: true);
+    }
 }
-else
+if (choice == 2 || choice == 3)
 {
-
     var prethermalisedLatticeFile = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
     var thermalisationStepsInLatticeSizeUnit = 100_000;
 
@@ -99,7 +123,7 @@ else
         spinUpdateMethod,
         randomSeed: randomSeed);
 
-    if (thermaliseAcrossTemperatureRange)
+    if (choice == 2)
     {
         temperatureRangeSimulation.ThermaliseAcrossTemperatureRange(
             temperatures,
@@ -120,8 +144,70 @@ else
         loadFile: true,
         saveLattice: true,
         saveMeasurements: true);
-
 }
+if (choice == 4)
+{
+    //var filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+    var filename = $"81_2.2800_656100000.dat";
+
+    var (initialSpinConfiguration, _, _) =
+        SpinConfigurationBuilder.InitialiseLattice(
+            filename,
+            dimension,
+            latticeLength);
+
+    var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(initialSpinConfiguration);
+
+    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}", resize: false);
+
+    Environment.Exit(0);
+}
+if (choice == 5)
+{
+    var filename = $"81_{boltzmannTemperature:0.0000}_656100000.dat";
+    var temperature = boltzmannTemperature;
+
+    var initialLattice = FileHelpers.LoadLattice(filename, dimension);
+    //Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(initialLattice, twoPowNine, resize: true);
+    Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(initialLattice, 9, temperature, resize: true);
+}
+if (choice == 6)
+{
+    //var boltzmannTemperature = 2.0;
+    Console.Write("100 MC-Sweep Unit: ");
+    var thermalisationStepsInMillionMCSweepsUnitInput = Console.ReadLine();
+    var thermalisationStepsIn100MCSweepUnit = thermalisationStepsInMillionMCSweepsUnitInput is ""
+                                                       ? 1
+                                                       : Convert.ToInt64(thermalisationStepsInMillionMCSweepsUnitInput);
+    Console.Write($"{thermalisationStepsIn100MCSweepUnit}");
+
+    string? filename = null;
+    try
+    {
+        filename = FileHelpers.GetFirstDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
+    }
+    catch (Exception e)
+    {
+        // ignored
+    }
+
+    //string? filename = $"{latticeLength}_{boltzmannTemperature:0.0000}_1000000000.dat";
+
+    var singleRunSimulation = new IsingSimulationSingleRun(filename,
+                                                           dimension,
+                                                           latticeLength,
+                                                           boltzmannTemperature,
+                                                           j,
+                                                           h,
+                                                           spinUpdateMethod,
+                                                           randomSeed: randomSeed);
+
+    singleRunSimulation.ThermaliseLargeLattice(thermalisationStepsIn100MCSweepUnit, spinUpdateMethod: spinUpdateMethod);
+
+    var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
+    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.0000}", resize: false);
+}
+
 // else
 // {
 //     var criticalRangeCount = 8;
