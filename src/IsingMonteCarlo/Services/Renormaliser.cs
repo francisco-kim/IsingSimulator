@@ -35,7 +35,7 @@ public static class Renormaliser
         {
             DrawHelpers.SaveBitmapAsPNG(
                 bitmap,
-                temperature is not null ? $"{latticeLengths[i]}_{temperature:0.0000}" : $"{latticeLengths[i]}",
+                temperature is not null ? $"{latticeLengths[i]}_{temperature:0.00000}" : $"{latticeLengths[i]}",
                 resize);
             ++i;
         }

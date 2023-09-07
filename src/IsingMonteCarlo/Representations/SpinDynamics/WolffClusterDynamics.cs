@@ -91,4 +91,19 @@ public sealed class WolffClusterDynamics : ISpinDynamics
             //     .ToList());
         }
     }
+
+    public void EmptyQueue(
+        double beta,
+        double j,
+        double h,
+        double? jY)
+    {
+        if (_clusterQueue.Count != 0)
+        {
+            while (_clusterQueue.Count > 0)
+            {
+                FlipSpin(beta, j, h, jY);
+            }
+        }
+    }
 }

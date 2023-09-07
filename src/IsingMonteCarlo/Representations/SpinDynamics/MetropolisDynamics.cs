@@ -28,6 +28,13 @@ public sealed class MetropolisDynamics : ISpinDynamics
         }
     }
 
+    public void EmptyQueue(
+        double beta,
+        double j,
+        double h,
+        double? jY)
+    { }
+
     private bool FlipWithMetropolis(
         double randomProbability,
         int siteIndex,

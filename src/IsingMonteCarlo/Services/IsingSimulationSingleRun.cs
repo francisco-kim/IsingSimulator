@@ -256,45 +256,12 @@ public sealed class IsingSimulationSingleRun
                 Simulation.Lattice.Spins,
                 _temperature,
                 iterationSteps,
-                isBinary: false);
+                isInByte: false);
         }
 
         Console.WriteLine(
             $"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
           + " after thermalisation.");
-    }
-
-    public void ThermaliseLargeLattice(
-        long thermalisationSteps100MCSweepUnit = 1,
-        SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
-        bool saveLattice = true,
-        bool resetIterationCountDuringSave = false)
-    {
-        Simulation.RunMonteCarlo(
-            _beta,
-            _j,
-            _h,
-            thermalisationSteps100MCSweepUnit * 100 * Simulation.TotalSpinsCount,
-            spinUpdateMethod,
-            _jY,
-            _randomSeed);
-
-        if (saveLattice)
-        {
-            var iterationSteps = resetIterationCountDuringSave
-                                     ? thermalisationSteps100MCSweepUnit
-                                     : _previousIterationCount
-                                     + thermalisationSteps100MCSweepUnit;
-            FileHelpers.SaveSpinConfiguration(
-                Simulation.Lattice.Spins,
-                _temperature,
-                iterationSteps,
-                isBinary: false);
-        }
-
-        Console.WriteLine(
-            $"M (T={_temperature}) = {Simulation.Hamiltonian.GetAverageMagnetisation(_j, _h)}"
-          + " after thermalisation.\n");
     }
 
     private void SaveMeasurements()
@@ -311,7 +278,7 @@ public sealed class IsingSimulationSingleRun
         }
 
         var completePathWithoutFileExtension =
-            Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.0000}"));
+            Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.00000}"));
 
         var results = new List<string>
         {

@@ -28,6 +28,13 @@ public sealed class GlauberDynamics : ISpinDynamics
         }
     }
 
+    public void EmptyQueue(
+        double beta,
+        double j,
+        double h,
+        double? jY)
+    { }
+
     private bool FlipWithGlauber(
         double randomProbability,
         int siteIndex,

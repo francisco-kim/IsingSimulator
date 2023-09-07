@@ -193,6 +193,11 @@ public sealed class IsingMonteCarloSimulation
             _spinDynamics.FlipSpin(beta, j, h, jY);
             ++iterationCount;
         }
+
+        if (_spinUpdateMethod is SpinUpdateMethod.Wolff)
+        {
+            _spinDynamics.EmptyQueue(beta, j, h, jY);
+        }
     }
 
     public void RunMonteCarloWithObservablesComputation(
@@ -257,6 +262,11 @@ public sealed class IsingMonteCarloSimulation
 
                 if (iterationCount % iterationsNeededForSingleChiXiMeasurement == 0)
                 {
+                    if (_spinUpdateMethod is SpinUpdateMethod.Wolff)
+                    {
+                        _spinDynamics.EmptyQueue(beta, j, h, jY);
+                    }
+
                     var magnetisationMeasurement = Hamiltonian.GetAverageMagnetisation(j, h, jY);
                     var magnetisationSquaredMeasurement = magnetisationMeasurement * magnetisationMeasurement;
                     var magnetisationAbsoluteMeasurement = Math.Abs(magnetisationMeasurement);

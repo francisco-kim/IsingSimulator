@@ -182,12 +182,12 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 Path.GetFullPath(
                     Path.Combine(
                         dataDirectory,
-                        $"{_latticeLength}_{temperature:0.0000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
+                        $"{_latticeLength}_{temperature:0.00000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
             var previousTemperatureLatticeFile =
                 Path.GetFullPath(
                     Path.Combine(
                         dataDirectory,
-                        $"{_latticeLength}_{previousTemperature:0.0000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
+                        $"{_latticeLength}_{previousTemperature:0.00000}_{thermalisationIterationCount.ToString(format: "G10", CultureInfo.InvariantCulture)}.dat"));
 
             var filenameToLoad = "";
             if (File.Exists(currentTemperatureLatticeFile))
@@ -233,7 +233,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
             var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
             var resizedBitmap = DrawHelpers.ResizeBitmap(bitmap, 512, 512);
-            DrawHelpers.SaveBitmapAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.0000}", resize: false);
+            DrawHelpers.SaveBitmapAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.00000}", resize: false);
 
             Console.WriteLine($"Run with T={temperature} completed.\n");
         }
@@ -291,7 +291,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
             Path.GetFullPath(
                 Path.Combine(
                     measurementDataDirectory,
-                    $"T=[{temperatures.First():0.0000}, {temperatures.Last():0.0000}]"));
+                    $"T=[{temperatures.First():0.00000}, {temperatures.Last():0.00000}]"));
 
         var results = new List<string>
         {

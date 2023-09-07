@@ -10,31 +10,38 @@ public static class FileHelpers
         IEnumerable<int> spins,
         double temperature,
         long iterationCount,
-        bool isBinary = false)
+        bool isInByte = true)
     {
         var enumeratedSpins = spins.ToList() ?? throw new ArgumentException(nameof(spins));
         var (filename, dataDirectory) = GetFilename(enumeratedSpins, temperature, iterationCount);
         var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(dataDirectory, filename));
 
-        if (!isBinary)
+        var extension = ".dat";
+        if (!isInByte)
         {
             File.WriteAllLines(
-                completePathWithoutFileExtension + ".dat",
+                completePathWithoutFileExtension + extension,
                 enumeratedSpins.Select(x => string.Join(separator: ";", x)));
         }
         else
         {
-            using var writer = new BinaryWriter(
-                new FileStream(path: completePathWithoutFileExtension + ".bin",
-                               FileMode.Create));
-            foreach (var item in enumeratedSpins)
-            {
-                writer.Write(item);
-            }
+            extension = ".bin";
+            var spinsInByte = enumeratedSpins.Select(s => s == 1 ? Convert.ToByte(true) : Convert.ToByte(false))
+                                             .ToArray();
+            using var fs = new FileStream(completePathWithoutFileExtension + extension, FileMode.Create, FileAccess.Write);
+            fs.Write(spinsInByte, 0, spinsInByte.Length);
+
+            //using var writer = new BinaryWriter(
+            //    new FileStream(path: completePathWithoutFileExtension + extension,
+            //                   FileMode.Create));
+            //foreach (var item in enumeratedSpins)
+            //{
+            //    writer.Write(item);
+            //}
         }
 
         Console.WriteLine(
-            $"Filename: {completePathWithoutFileExtension}\n");
+            $"Filename: {completePathWithoutFileExtension + extension}\n");
     }
 
     public static List<int> LoadSpinConfiguration(
@@ -54,15 +61,21 @@ public static class FileHelpers
                        .ToList();
         }
 
-        var result = new List<int>();
+        var fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
+        var reader = new BinaryReader(fileStream);
+        var bytesCount = new FileInfo(filename).Length;
+        var result = reader.ReadBytes((int)bytesCount);
+        return result.Select(s => s == 1 ? 1 : -1).ToList();
 
-        using var reader = new BinaryReader(new FileStream(filename, FileMode.Open));
-        while (reader.BaseStream.Position < reader.BaseStream.Length)
-        {
-            result.Add(reader.ReadInt32());
-        }
+        //var result = new List<int>();
 
-        return result;
+        //using var reader = new BinaryReader(new FileStream(filename, FileMode.Open));
+        //while (reader.BaseStream.Position < reader.BaseStream.Length)
+        //{
+        //    result.Add(reader.ReadBytes() == true ? 1 : -1);
+        //}
+
+        //return result;
     }
 
     public static NearestNeighbourNDIsingLattice<int> LoadLattice(string filename, int dimension)
@@ -73,18 +86,19 @@ public static class FileHelpers
         return new NearestNeighbourNDIsingLattice<int>(dimension, latticeLength, spinConfiguration);
     }
 
-    public static string GetFirstDataFileWithLatticeSizeAndTemperature(int latticeLength, double temperature)
+    public static string? GetFirstDataFileWithLatticeSizeAndTemperature(int latticeLength, double temperature)
     {
         var dataDirectory = GetDataRootDirectory();
         var firstFileName = new DirectoryInfo(dataDirectory)
                             .EnumerateFiles()
+                            .Where(file => file.Name.Split('.').Last() == "dat" || file.Name.Split('.').Last() == "bin")
                             .FirstOrDefault(
                                 file => filenameContainsCorrectLatticeLengthAndTemperature(
-                                    GetFilenameData(file.FullName),
+                                    GetFilenameData(file.Name),
                                     latticeLength,
-                                    temperature)) ?? throw new ArgumentNullException(dataDirectory);
+                                    temperature));
 
-        return firstFileName.FullName;
+        return firstFileName?.FullName;
     }
 
     public static string GetFullPathWithFilename(string filename) =>
@@ -123,7 +137,7 @@ public static class FileHelpers
 
         var filename = latticeLength
                      + "_"
-                     + $"{temperature:0.0000}"
+                     + $"{temperature:0.00000}"
                      + "_"
                      + iterationCount.ToString(format: "G10", CultureInfo.InvariantCulture);
 

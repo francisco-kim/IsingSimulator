@@ -141,16 +141,22 @@ public class DrawHelpers
         return result;
     }
 
-    public static void SaveBitmapAsPNG(Bitmap bitmap, string filename, bool resize = false)
+    public static void SaveBitmapAsPNG(Bitmap bitmap, string filename, bool resize = false, int? size = null)
     {
         var rootDirectory = FileHelpers.GetDataRootDirectory();
         var fullFilename = Path.GetFullPath(Path.Combine(rootDirectory, filename + ".png"));
 
-        if (resize)
+        if (resize && size is null)
         {
             var resizedBitmap = bitmap.Width % 3 is not 0
                                 ? ResizeBitmap(bitmap, TwoPowNine, TwoPowNine)
                                 : ResizeBitmap(bitmap, ThreePowSix, ThreePowSix);
+
+            resizedBitmap.Save(fullFilename, ImageFormat.Png);
+        }
+        else if (resize && size is not null)
+        {
+            var resizedBitmap = ResizeBitmap(bitmap, (int)size, (int)size);
 
             resizedBitmap.Save(fullFilename, ImageFormat.Png);
         }
