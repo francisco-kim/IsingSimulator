@@ -1,10 +1,9 @@
 ﻿using System.Numerics;
 
 using IsingMonteCarlo.Models;
-using IsingMonteCarlo.Representations;
 using IsingMonteCarlo.Representations.SpinDynamics;
 
-namespace IsingMonteCarlo.Services;
+namespace IsingMonteCarlo.Representations;
 
 public sealed class IsingMonteCarloSimulation
 {
@@ -76,8 +75,8 @@ public sealed class IsingMonteCarloSimulation
         SpatialVectors = Lattice.SpatialVectors;
 
         _spinUpdateMethod = null;
-       _spinDynamics = new GlauberDynamics(Hamiltonian);
- 
+        _spinDynamics = new GlauberDynamics(Hamiltonian);
+
         _q1 = 2.0 * Math.PI / Lattice.LatticeLength;
         _q2 = 2.0 * _q1;
 
@@ -143,7 +142,7 @@ public sealed class IsingMonteCarloSimulation
 
     public List<double> MagnetisationAbsoluteList { get; private set; }
 
-    public List<double> EnergyList { get;  private set; }
+    public List<double> EnergyList { get; private set; }
 
     public void RunMonteCarlo(
         double beta,

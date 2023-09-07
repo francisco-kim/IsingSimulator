@@ -1,5 +1,6 @@
 using IsingMonteCarlo.Helpers;
 using IsingMonteCarlo.Models;
+using IsingMonteCarlo.Representations;
 
 namespace IsingMonteCarlo.Services;
 

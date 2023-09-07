@@ -23,7 +23,7 @@ Console.Write("Choice: ");
 var choice = Convert.ToInt32(Console.ReadLine());
 
 var latticeLength = 19683;
-var boltzmannTemperature = 2.2692;
+var boltzmannTemperature = 2.26923;    // T_c = 2.26919    T_c(L = 128) = 2.27557
 var spinUpdateMethod = SpinUpdateMethod.Wolff;
 if (choice is not 6)
 {
@@ -35,7 +35,7 @@ if (choice is not 6)
     Console.Write($"{latticeLength}\n");
 
     //var boltzmannTemperature = 2.0;
-    Console.Write("Temperature: ");
+    Console.Write("Temperature (T_c = 2.26919; T_c(L = 128) = 2.27557): ");
     var temperatureInput = Console.ReadLine();
     // T = 2.2691853 = 2 / ln(1 + sqrt(2));
     boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToInt32(temperatureInput);
