@@ -38,7 +38,7 @@ if (choice is not 6)
     Console.Write("Temperature (T_c = 2.26919; T_c(L = 128) = 2.27557): ");
     var temperatureInput = Console.ReadLine();
     // T = 2.2691853 = 2 / ln(1 + sqrt(2));
-    boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToInt32(temperatureInput);
+    boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToDouble(temperatureInput);
     Console.Write($"{boltzmannTemperature}\n");
 
     //var spinUpdateMethod = SpinUpdateMethod.Wolff;
@@ -62,8 +62,9 @@ const int measurementsRepetitionCountForChiXiVariance = 5;
 
 if (choice == 0 || choice == 1)
 {
-    //string? filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000000000.dat";
-    string? filename = null;
+    string? filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000.bin";
+    // string? filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000000000.dat";
+    // string? filename = null;
 
     var thermalisationStepsInLatticeSizeUnit =
         (filename is null) ? 100_000 : 0;
@@ -197,7 +198,8 @@ if (choice == 3 || choice == 4)
 if (choice == 5)
 {
     //var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000000000.dat";
-    var filename = $"81_2.2800_656100000.dat";
+    // var filename = $"81_2.2800_656100000.dat";
+    var filename = $"19683_2.26920_1.bin";
 
     var (initialSpinConfiguration, _, _) =
         SpinConfigurationBuilder.InitialiseLattice(
@@ -207,13 +209,14 @@ if (choice == 5)
 
     var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(initialSpinConfiguration);
 
-    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.00000}", resize: false);
+    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.00000}", resize: true);
 
     Environment.Exit(0);
 }
 if (choice == 6)
 {
-    var filename = $"81_{boltzmannTemperature:0.00000}_656100000.dat";
+    var filename = $"243_2.26920_1609932704.dat";
+    // var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_656100000.dat";
     var temperature = boltzmannTemperature;
 
     var initialLattice = FileHelpers.LoadLattice(filename, dimension);

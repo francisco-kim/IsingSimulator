@@ -136,7 +136,8 @@ public class DrawHelpers
     {
         var result = new Bitmap(width, height);
         using var g = Graphics.FromImage(result);
-        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        // g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
         g.DrawImage(sourceBitmap, 0, 0, width, height);
         return result;
     }

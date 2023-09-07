@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "dotnet",
+			"task": "build",
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"label": "dotnet: build Debug"
+		},
+		{
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"command": "dotnet",
+			"type": "process",
+			"args": [
+				"build",
+				"--configuration",
+				"Release"
+			],
+			"label": "dotnet: build Release"
+		},
+	]
+}
