@@ -6,7 +6,7 @@ namespace IsingMonteCarlo.Services;
 
 public sealed class IsingSimulationSingleRun
 {
-    private const int ThermalisationStepsInLatticeSizeUnit = 20_000;
+    private const int ThermalisationStepsInMCSweepUnit = 20_000;
 
     private readonly SpinUpdateMethod _spinUpdateMethod;
     private readonly double _temperature;
@@ -123,13 +123,13 @@ public sealed class IsingSimulationSingleRun
         int iterationsNeededForSingleChiXiMeasurement = 5000,
         int measurementsCountForChiXiExpectationValue = 200,
         int measurementsRepetitionCountForChiXiVariance = 5,
-        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
+        int thermalisationStepsInMCSweepUnit = ThermalisationStepsInMCSweepUnit,
         bool saveLattice = true,
         bool saveMeasurements = true,
         bool resetIterationCountDuringSave = false)
     {
         Thermalise(
-            thermalisationStepsInLatticeSizeUnit,
+            thermalisationStepsInMCSweepUnit,
             _spinUpdateMethod,
             saveLattice,
             resetIterationCountDuringSave);
@@ -232,7 +232,7 @@ public sealed class IsingSimulationSingleRun
     }
 
     public void Thermalise(
-        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInLatticeSizeUnit,
+        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInMCSweepUnit,
         SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
         bool saveLattice = true,
         bool resetIterationCountDuringSave = false)
@@ -267,19 +267,19 @@ public sealed class IsingSimulationSingleRun
 
     private void SaveMeasurements()
     {
-        var (_, measurementDataDirectory) = FileHelpers.GetFilename(
-            Simulation.Lattice.Spins,
-            _temperature,
-            iterationCount: 0);
-        measurementDataDirectory = Path.GetFullPath(Path.Combine(measurementDataDirectory, path2: "measurements"));
+        var measurementDataDirectory = FileHelpers.GetDataRootDirectory(new string[]
+        {
+            Convert.ToString(_latticeLength),
+            "measurements"
+        });
 
         if (!Directory.Exists(measurementDataDirectory))
         {
             Directory.CreateDirectory(measurementDataDirectory);
         }
 
-        var completePathWithoutFileExtension =
-            Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.00000}"));
+        var completePath =
+            Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.00000}", ".txt"));
 
         var results = new List<string>
         {
@@ -291,9 +291,7 @@ public sealed class IsingSimulationSingleRun
             $"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", RenormalisedCorrelationLengthList) + "}}"
         };
 
-        File.WriteAllLines(
-            completePathWithoutFileExtension + ".num",
-            results);
+        File.WriteAllLines(completePath, results);
     }
 
     private static double GetVariance(List<double> measurements, double mean)

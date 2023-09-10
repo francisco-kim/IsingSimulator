@@ -12,17 +12,13 @@ public static class SpinConfigurationBuilder
     {
         if (filename is not null)
         {
-            var dataDirectory = FileHelpers.GetDataRootDirectory();
-            // var firstFileName = new DirectoryInfo(dataDirectory).EnumerateFiles()
-            //                                                     .Select(file => file.FullName)
-            //                                                     .FirstOrDefault();
             var fullPathWithFilename = FileHelpers.GetFullPathWithFilename(filename);
 
             var spinConfiguration =  FileHelpers.LoadSpinConfiguration(fullPathWithFilename,
                                                          out var boltzmannTemperature,
-                                                         out var previousIterationCount);
+                                                         out var previousIterationCountIn100MCSweepUnit);
 
-            return (spinConfiguration, boltzmannTemperature, previousIterationCount);
+            return (spinConfiguration, boltzmannTemperature, previousIterationCountIn100MCSweepUnit);
         }
 
         var totalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));

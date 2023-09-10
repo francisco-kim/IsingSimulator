@@ -12,5 +12,6 @@ public interface ISpinDynamics
         double beta,
         double j,
         double h,
-        double? jY);
+        double? jY,
+        bool verbose = false);
 }

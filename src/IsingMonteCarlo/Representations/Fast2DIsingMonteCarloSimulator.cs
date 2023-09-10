@@ -134,6 +134,7 @@ public class Fast2DIsingMonteCarloSimulator
         {
             while (_clusterQueue.Count > 0)
             {
+                Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining.");
                 FlipSpinWithWolff(beta);
             }
         }
@@ -172,7 +173,7 @@ public class Fast2DIsingMonteCarloSimulator
         int? randomSeed = null,
         bool verbose = true)
     {
-        var (initialSpinConfiguration, _, previousIterationCount) =
+        var (initialSpinConfiguration, _, previousIterationCountIn100MCSweepUnit) =
             SpinConfigurationBuilder.InitialiseLattice(
                 filename,
                 dimension: 2,
@@ -199,14 +200,14 @@ public class Fast2DIsingMonteCarloSimulator
                 saveLattice: false);
         }
 
-        var iterationSteps = resetIterationCountDuringSave
+        var iterationStepsIn100MCSweepUnit = resetIterationCountDuringSave
                                  ? thermalisationStepsIn100MCSweepUnit
-                                 : previousIterationCount
+                                 : previousIterationCountIn100MCSweepUnit
                                  + thermalisationStepsIn100MCSweepUnit;
         FileHelpers.SaveSpinConfiguration(
             simulation.GetSpinConfiguration(),
             temperature,
-            iterationSteps,
+            iterationStepsIn100MCSweepUnit,
             isInByte: true);
 
         Console.WriteLine(
@@ -311,14 +312,14 @@ public class Fast2DIsingMonteCarloSimulator
         return lattice;
     }
 
-    private void SaveSpinConfiguration(double temperature, long iterationCount)
+    private void SaveSpinConfiguration(double temperature, long iterationCountIn100MCSweepUnit)
     {
         var latticeConfiguration = GetSpinConfiguration();
 
         FileHelpers.SaveSpinConfiguration(
             latticeConfiguration,
             temperature,
-            iterationCount,
+            iterationCountIn100MCSweepUnit,
             isInByte: true);
     }
 

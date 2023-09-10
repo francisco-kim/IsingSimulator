@@ -25,7 +25,7 @@ var choice = Convert.ToInt32(Console.ReadLine());
 var latticeLength = 19683;
 var boltzmannTemperature = 2.26923;    // T_c = 2.26919    T_c(L = 128) = 2.27557
 var spinUpdateMethod = SpinUpdateMethod.Wolff;
-if (choice is not 6)
+if (choice is not 7)
 {
     //var latticeLength = 19683;
     Console.Write("Lattice length: ");
@@ -33,7 +33,6 @@ if (choice is not 6)
     // T = 2.2691853 = 2 / ln(1 + sqrt(2));
     latticeLength = latticeLengthInput is "" ? latticeLength : Convert.ToInt32(latticeLengthInput);
     Console.Write($"{latticeLength}\n");
-
     //var boltzmannTemperature = 2.0;
     Console.Write("Temperature (T_c = 2.26919; T_c(L = 128) = 2.27557): ");
     var temperatureInput = Console.ReadLine();
@@ -62,7 +61,7 @@ const int measurementsRepetitionCountForChiXiVariance = 5;
 
 if (choice == 0 || choice == 1)
 {
-    string? filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000.bin";
+    string? filename = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
     // string? filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000000000.dat";
     // string? filename = null;
 
@@ -90,7 +89,7 @@ if (choice == 0 || choice == 1)
 
         var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
 
-        DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.00000}", resize: false);
+        DrawHelpers.SaveBitmapAsPNG(bitmap, latticeLength, boltzmannTemperature, resize: false);
     }
     else
     {
@@ -139,14 +138,16 @@ if (choice == 2)
             verbose: false);
 
         var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(thermalisedSpins);
-        DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{temperature:0.00000}", resize: true);
+        DrawHelpers.SaveBitmapAsPNG(bitmap, latticeLength, boltzmannTemperature, resize: true);
 
         Console.WriteLine($"T = {temperature} completed.");
     }
 }
 if (choice == 3 || choice == 4)
 {
-    var prethermalisedLatticeFile = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000.dat";
+    // var prethermalisedLatticeFile = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000.dat";
+    var prethermalisedLatticeFile = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature)
+                                    ?? "";
     var thermalisationStepsInLatticeSizeUnit = 100_000;
 
     //var rangeCount = 8;
@@ -177,8 +178,7 @@ if (choice == 3 || choice == 4)
     {
         temperatureRangeSimulation.ThermaliseAcrossTemperatureRange(
             temperatures,
-            thermalisationStepsInLatticeSizeUnit,
-            spinUpdateMethod);
+            thermalisationStepsInLatticeSizeUnit);
 
         Environment.Exit(0);
     }
@@ -191,15 +191,15 @@ if (choice == 3 || choice == 4)
         thermalisationStepsInLatticeSizeUnit,
         prethermalisedLatticeFile,
         usePreviousTemperatureSpinsAsInitialConfiguration: false,
-        loadFile: true,
+        loadFileForEachTemperature: true,
         saveLattice: true,
         saveMeasurements: true);
 }
 if (choice == 5)
 {
-    //var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1000000000.dat";
     // var filename = $"81_2.2800_656100000.dat";
-    var filename = $"19683_2.26920_1.bin";
+    // var filename = $"19683_2.26920_1.bin";
+    var filename = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
 
     var (initialSpinConfiguration, _, _) =
         SpinConfigurationBuilder.InitialiseLattice(
@@ -209,19 +209,28 @@ if (choice == 5)
 
     var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(initialSpinConfiguration);
 
-    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.00000}", resize: true);
+    DrawHelpers.SaveBitmapAsPNG(bitmap, latticeLength, boltzmannTemperature, resize: true);
 
     Environment.Exit(0);
 }
 if (choice == 6)
 {
-    var filename = $"243_2.26920_1609932704.dat";
+    var filesInLatticeLengthFolder = Directory.GetFiles(FileHelpers.GetDataLatticeLengthSubdirectory(latticeLength))
+        .Where(file => file.Split('.').Last() == "dat"
+            || file.Split('.').Last() == "bin");
+    foreach (string file in filesInLatticeLengthFolder)
+    {
+        Console.WriteLine(file);
+    }
+    Console.WriteLine("Enter file name (.dat or .bin): ");
+
+    var filename = Console.ReadLine() ?? throw new ArgumentNullException();
+    // var filename = $"243_2.26920_1609932704.dat";
     // var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_656100000.dat";
-    var temperature = boltzmannTemperature;
 
     var initialLattice = FileHelpers.LoadLattice(filename, dimension);
     //Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(initialLattice, twoPowNine, resize: true);
-    Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(initialLattice, 9, temperature, resize: true);
+    Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(initialLattice, 9, boltzmannTemperature, resize: true);
 }
 if (choice == 7)
 {
@@ -232,11 +241,12 @@ if (choice == 7)
                                                        : Convert.ToInt64(thermalisationStepsInMillionMCSweepsUnitInput);
     Console.Write($"{thermalisationStepsIn100MCSweepUnit}\n");
 
-    var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1.bin";
+    // var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_1.bin";
     //string? filename = null;
+    var filename = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
     try
     {
-        filename = FileHelpers.GetFirstDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
+        filename = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(latticeLength, boltzmannTemperature);
     }
     catch (Exception)
     {
@@ -254,7 +264,7 @@ if (choice == 7)
         verbose: true);
 
     var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(thermalisedSpins);
-    DrawHelpers.SaveBitmapAsPNG(bitmap, $"{latticeLength}_{boltzmannTemperature:0.00000}", resize: true);
+    DrawHelpers.SaveBitmapAsPNG(bitmap, latticeLength, boltzmannTemperature, resize: true);
 }
 
 // else

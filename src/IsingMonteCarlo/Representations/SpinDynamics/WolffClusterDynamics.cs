@@ -96,10 +96,15 @@ public sealed class WolffClusterDynamics : ISpinDynamics
         double beta,
         double j,
         double h,
-        double? jY)
+        double? jY,
+        bool verbose = false)
     {
         if (_clusterQueue.Count != 0)
         {
+            if (verbose)
+            {
+                Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining.");
+            }
             while (_clusterQueue.Count > 0)
             {
                 FlipSpin(beta, j, h, jY);

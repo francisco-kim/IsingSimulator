@@ -195,7 +195,7 @@ public sealed class IsingMonteCarloSimulation
 
         if (_spinUpdateMethod is SpinUpdateMethod.Wolff)
         {
-            _spinDynamics.EmptyQueue(beta, j, h, jY);
+            _spinDynamics.EmptyQueue(beta, j, h, jY, verbose: true);
         }
     }
 
@@ -263,7 +263,7 @@ public sealed class IsingMonteCarloSimulation
                 {
                     if (_spinUpdateMethod is SpinUpdateMethod.Wolff)
                     {
-                        _spinDynamics.EmptyQueue(beta, j, h, jY);
+                        _spinDynamics.EmptyQueue(beta, j, h, jY, verbose: true);
                     }
 
                     var magnetisationMeasurement = Hamiltonian.GetAverageMagnetisation(j, h, jY);

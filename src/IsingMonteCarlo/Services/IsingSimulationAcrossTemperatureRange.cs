@@ -7,7 +7,7 @@ namespace IsingMonteCarlo.Services;
 
 public sealed class IsingSimulationAcrossTemperatureRange
 {
-    private const int DefaultThermalisationStepsInLatticeSizeUnit = 20_000;
+    private const int DefaultThermalisationStepsInMCSweepUnit = 20_000;
 
     private readonly SpinUpdateMethod _spinUpdateMethod;
     private readonly double _j;
@@ -98,10 +98,10 @@ public sealed class IsingSimulationAcrossTemperatureRange
         int iterationStepsBetweenMeasurements,
         int measurementsCount = 20,
         int measurementsRepetitionCount = 20,
-        int thermalisationStepsInLatticeSizeUnit = 100_000,
+        int thermalisationStepsInMCSweepUnit = 100_000,
         string prethermalisedFirstLatticeFile = "",
         bool usePreviousTemperatureSpinsAsInitialConfiguration = true,
-        bool loadFile = false,
+        bool loadFileForEachTemperature = false,
         bool saveLattice = true,
         bool saveMeasurements = true)
     {
@@ -109,14 +109,14 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
         var iterationCount = 0;
         var previousTemperature = 0.0;
-        var thermalisationMonteCarloSweepCount = thermalisationStepsInLatticeSizeUnit;
+        var thermalisationMonteCarloSweepCount = thermalisationStepsInMCSweepUnit;
 
         foreach (var temperature in enumeratedTemperatures)
         {
             string? filename = null;
-            if (loadFile && prethermalisedFirstLatticeFile is "")
+            if (loadFileForEachTemperature && prethermalisedFirstLatticeFile is "")
             {
-                filename = FileHelpers.GetFirstDataFileWithLatticeSizeAndTemperature(
+                filename = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(
                     _latticeLength,
                     temperature);
             }
@@ -127,7 +127,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 if (iterationCount is 0)
                 {
                     filename = Path.GetFullPath(Path.Combine(dataDirectory, prethermalisedFirstLatticeFile));
-                    thermalisationStepsInLatticeSizeUnit = 0;
+                    thermalisationStepsInMCSweepUnit = 0;
                 }
                 else
                 {
@@ -153,7 +153,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 iterationStepsBetweenMeasurements,
                 measurementsCount,
                 measurementsRepetitionCount,
-                thermalisationStepsInLatticeSizeUnit,
+                thermalisationStepsInMCSweepUnit,
                 saveLattice,
                 saveMeasurements,
                 resetIterationCountDuringSave: true);
@@ -164,7 +164,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
             Console.WriteLine($"\nRun with T={temperature} completed.\n");
 
-            thermalisationStepsInLatticeSizeUnit = thermalisationMonteCarloSweepCount;
+            thermalisationStepsInMCSweepUnit = thermalisationMonteCarloSweepCount;
             previousTemperature = temperature;
 
             ++iterationCount;
@@ -177,7 +177,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
             double temperature)
         {
             var thermalisationIterationCount =
-                thermalisationStepsInLatticeSizeUnit * _latticeLength * _latticeLength;
+                thermalisationStepsInMCSweepUnit * _latticeLength * _latticeLength;
             var currentTemperatureLatticeFile =
                 Path.GetFullPath(
                     Path.Combine(
@@ -193,7 +193,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
             if (File.Exists(currentTemperatureLatticeFile))
             {
                 filenameToLoad = currentTemperatureLatticeFile;
-                thermalisationStepsInLatticeSizeUnit = 0;
+                thermalisationStepsInMCSweepUnit = 0;
             }
 
             if (File.Exists(previousTemperatureLatticeFile)
@@ -208,8 +208,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
     public void ThermaliseAcrossTemperatureRange(
         IEnumerable<double> temperatures,
-        int thermalisationStepsInLatticeSizeUnit = DefaultThermalisationStepsInLatticeSizeUnit,
-        SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff)
+        int thermalisationStepsInMCSweepUnit = DefaultThermalisationStepsInMCSweepUnit)
     {
         var enumeratedTemperatures = temperatures?.ToList() ?? throw new ArgumentNullException(nameof(temperatures));
 
@@ -227,13 +226,13 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 randomSeed: _randomSeed);
 
             singleRunSimulation.Thermalise(
-                thermalisationStepsInLatticeSizeUnit,
+                thermalisationStepsInMCSweepUnit,
                 _spinUpdateMethod,
                 saveLattice: true);
 
             var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
-            var resizedBitmap = DrawHelpers.ResizeBitmap(bitmap, 512, 512);
-            DrawHelpers.SaveBitmapAsPNG(resizedBitmap, $"{_latticeLength}_{temperature:0.00000}", resize: false);
+            var resizedBitmap = DrawHelpers.ResizeBitmap(bitmap);
+            DrawHelpers.SaveBitmapAsPNG(resizedBitmap, _latticeLength, temperature, resize: false);
 
             Console.WriteLine($"Run with T={temperature} completed.\n");
         }
@@ -276,22 +275,22 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
     private void SaveMeasurements(List<double> temperatures)
     {
-        var (_, measurementDataDirectory) = FileHelpers.GetFilename(
-            _latticeLength,
-            temperature: 0.0,
-            iterationCount: 0);
-        measurementDataDirectory = Path.GetFullPath(Path.Combine(measurementDataDirectory, path2: "measurements"));
+        var measurementDataDirectory = FileHelpers.GetDataRootDirectory(new string[]
+        {
+            Convert.ToString(_latticeLength),
+            "measurements"
+        });
 
         if (!Directory.Exists(measurementDataDirectory))
         {
             Directory.CreateDirectory(measurementDataDirectory);
         }
 
-        var completePathWithoutFileExtension =
+        var completePath =
             Path.GetFullPath(
                 Path.Combine(
                     measurementDataDirectory,
-                    $"T=[{temperatures.First():0.00000}, {temperatures.Last():0.00000}]"));
+                    $"T=[{temperatures.First():0.00000}, {temperatures.Last():0.00000}]", ".txt"));
 
         var results = new List<string>
         {
@@ -303,9 +302,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
             "xi = " + "{" + string.Join(", ", RenormalisedCorrelationLengthList.Select(el => "{" + string.Join(", ", el) + "}")) + "}"
         };
 
-        File.WriteAllLines(
-            completePathWithoutFileExtension + ".num",
-            results);
+        File.WriteAllLines(completePath + ".num", results);
     }
 
     private void ResetObservables()

@@ -12,7 +12,7 @@ public static class Renormaliser
     public static void GenerateRenormalisedLatticeSpinConfigurationImages(
         NearestNeighbourNDIsingLattice<int> initialLattice,
         int finalLatticeSizeLimit,
-        double? temperature = null,
+        double temperature = double.NaN,
         bool resize = true) =>
         GenerateRenormalisedLatticeSpinConfigurationImages(
             GenerateRenormalisedLattices(initialLattice, finalLatticeSizeLimit),
@@ -21,7 +21,7 @@ public static class Renormaliser
 
     public static void GenerateRenormalisedLatticeSpinConfigurationImages(
         IEnumerable<NearestNeighbourNDIsingLattice<int>> lattices,
-        double? temperature,
+        double temperature,
         bool resize = true)
     {
         var enumeratedLattices = lattices?.ToList() ?? throw new ArgumentNullException(nameof(lattices));
@@ -35,7 +35,8 @@ public static class Renormaliser
         {
             DrawHelpers.SaveBitmapAsPNG(
                 bitmap,
-                temperature is not null ? $"{latticeLengths[i]}_{temperature:0.00000}" : $"{latticeLengths[i]}",
+                latticeLengths[i],
+                temperature,
                 resize);
             ++i;
         }

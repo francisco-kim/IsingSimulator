@@ -102,10 +102,11 @@ public class DrawHelpers
         }
 
         // Build image
+        // return BuildImage(dataBytes, width, height, width, PixelFormat.Format1bppIndexed, palette, null);
         return BuildImage(dataBytes, width, height, width, PixelFormat.Format8bppIndexed, palette, null);
     }
 
-    public static Bitmap ResizeBitmap(Bitmap sourceBitmap, int width, int height)
+    public static Bitmap ResizeBitmap(Bitmap sourceBitmap, int width = TwoPowNine, int height = TwoPowNine)
     {
         if (sourceBitmap is null)
         {
@@ -122,7 +123,7 @@ public class DrawHelpers
         }
     }
 
-    public static Bitmap ResizeToLargerBitmap(Bitmap sourceBitmap, int width, int height)
+    public static Bitmap ResizeToLargerBitmap(Bitmap sourceBitmap, int width = TwoPowNine, int height = TwoPowNine)
     {
         var result = new Bitmap(width, height);
         using var g = Graphics.FromImage(result);
@@ -132,7 +133,7 @@ public class DrawHelpers
         return result;
     }
 
-    public static Bitmap ResizeToSmallerBitmap(Bitmap sourceBitmap, int width, int height)
+    public static Bitmap ResizeToSmallerBitmap(Bitmap sourceBitmap, int width = TwoPowNine, int height = TwoPowNine)
     {
         var result = new Bitmap(width, height);
         using var g = Graphics.FromImage(result);
@@ -142,10 +143,11 @@ public class DrawHelpers
         return result;
     }
 
-    public static void SaveBitmapAsPNG(Bitmap bitmap, string filename, bool resize = false, int? size = null)
+    public static void SaveBitmapAsPNG(Bitmap bitmap, int latticeLength, double temperature, bool resize = false, int? size = null)
     {
-        var rootDirectory = FileHelpers.GetDataRootDirectory();
-        var fullFilename = Path.GetFullPath(Path.Combine(rootDirectory, filename + ".png"));
+        var filename = FileHelpers.GetFilename(latticeLength, temperature, iterationCountInMCSweepUnit: 0);
+        var rootDirectory = FileHelpers.GetDataLatticeLengthSubdirectory(latticeLength);
+        var fullFilename = Path.GetFullPath(Path.Combine(rootDirectory, "images" ,filename + ".png"));
 
         if (resize && size is null)
         {

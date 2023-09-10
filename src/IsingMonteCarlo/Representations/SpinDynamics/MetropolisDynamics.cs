@@ -32,7 +32,8 @@ public sealed class MetropolisDynamics : ISpinDynamics
         double beta,
         double j,
         double h,
-        double? jY)
+        double? jY,
+        bool verbose)
     { }
 
     private bool FlipWithMetropolis(
