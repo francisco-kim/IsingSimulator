@@ -68,18 +68,19 @@ if (choice == 0 || choice == 1)
     var thermalisationStepsInLatticeSizeUnit =
         (filename is null) ? 100_000 : 0;
 
-    var singleRunSimulation = new IsingSimulationSingleRun(filename,
-                                                           dimension,
-                                                           latticeLength,
-                                                           boltzmannTemperature,
-                                                           j,
-                                                           h,
-                                                           spinUpdateMethod,
-                                                           randomSeed: randomSeed);
+    var simulationWithObservables = new IsingSimulationWithObservablesComputation(
+        filename,
+        dimension,
+        latticeLength,
+        boltzmannTemperature,
+        j,
+        h,
+        spinUpdateMethod,
+        randomSeed: randomSeed);
 
     if (choice == 0)
     {
-        singleRunSimulation.RunWithMeasurements(
+        var _ = simulationWithObservables.RunWithMeasurements(
             iterationNeededForSingleChiXiMeasurement,
             measurementsCountForChiXiExpectationValue,
             measurementsRepetitionCountForChiXiVariance,
@@ -87,13 +88,13 @@ if (choice == 0 || choice == 1)
             saveLattice: true,
             saveMeasurements: true);
 
-        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
+        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(simulationWithObservables.Simulation.Lattice.Spins);
 
         DrawHelpers.SaveBitmapAsPNG(bitmap, latticeLength, boltzmannTemperature, resize: false);
     }
     else
     {
-        singleRunSimulation.Thermalise(thermalisationStepsInLatticeSizeUnit, spinUpdateMethod, saveLattice: true);
+        simulationWithObservables.Thermalise(thermalisationStepsInLatticeSizeUnit, spinUpdateMethod, saveLattice: true);
     }
 }
 if (choice == 2)

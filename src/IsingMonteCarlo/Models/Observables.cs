@@ -1,0 +1,27 @@
+namespace IsingMonteCarlo.Models;
+
+public record class Observables(
+    double Magnetisation,
+    double MagnetisationSquared,
+    double MagnetisationAbsolute,
+    double Energy,
+    double Susceptibility,
+    double CorrelationLengthX,
+    double CorrelationLengthY,
+    double RenormalisedCorrelationLength,
+    double MagnetisationSigma,
+    double MagnetisationSquaredSigma,
+    double MagnetisationAbsoluteSigma,
+    double EnergySigma,
+    double SusceptibilitySigma,
+    double CorrelationLengthXSigma,
+    double CorrelationLengthYSigma,
+    double RenormalisedCorrelationLengthSigma,
+    List<double> MagnetisationList,
+    List<double> MagnetisationSquaredList,
+    List<double> MagnetisationAbsoluteList,
+    List<double> EnergyList,
+    List<double> CorrelationLengthXList,
+    List<double> CorrelationLengthYList,
+    List<double> RenormalisedCorrelationLengthList,
+    List<double> SusceptibilityList);

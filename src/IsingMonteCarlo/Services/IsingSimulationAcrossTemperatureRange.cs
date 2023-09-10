@@ -137,7 +137,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 }
             }
 
-            var singleRunSimulation = new IsingSimulationSingleRun(
+            var simulationWithObservables = new IsingSimulationWithObservablesComputation(
                 filename,
                 _dimension,
                 _latticeLength,
@@ -149,7 +149,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 randomSeed: _randomSeed);
 
             // iterationStepsBetweenMeasurements (suggested): _totalSpinsCount * [20, 100]
-            singleRunSimulation.RunWithMeasurements(
+            var observables = simulationWithObservables.RunWithMeasurements(
                 iterationStepsBetweenMeasurements,
                 measurementsCount,
                 measurementsRepetitionCount,
@@ -158,7 +158,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 saveMeasurements,
                 resetIterationCountDuringSave: true);
 
-            CalculateExpectationValues(singleRunSimulation, temperature);
+            CalculateExpectationValues(observables, temperature);
 
             ResetObservables();
 
@@ -214,7 +214,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
 
         foreach (var temperature in enumeratedTemperatures)
         {
-            var singleRunSimulation = new IsingSimulationSingleRun(
+            var simulationWithObservables = new IsingSimulationWithObservablesComputation(
                 filename: null,
                 _dimension,
                 _latticeLength,
@@ -225,12 +225,12 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 _jY,
                 randomSeed: _randomSeed);
 
-            singleRunSimulation.Thermalise(
+            simulationWithObservables.Thermalise(
                 thermalisationStepsInMCSweepUnit,
                 _spinUpdateMethod,
                 saveLattice: true);
 
-            var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(singleRunSimulation.Simulation.Lattice.Spins);
+            var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(simulationWithObservables.Simulation.Lattice.Spins);
             var resizedBitmap = DrawHelpers.ResizeBitmap(bitmap);
             DrawHelpers.SaveBitmapAsPNG(resizedBitmap, _latticeLength, temperature, resize: false);
 
@@ -238,38 +238,38 @@ public sealed class IsingSimulationAcrossTemperatureRange
         }
     }
 
-    private void CalculateExpectationValues(IsingSimulationSingleRun singleRunSimulation, double temperature)
+    private void CalculateExpectationValues(Observables observables, double temperature)
     {
         MagnetisationList.Add(
             new List<double>(3)
             {
-                temperature, singleRunSimulation.Magnetisation, singleRunSimulation.MagnetisationSigma
+                temperature, observables.Magnetisation, observables.MagnetisationSigma
             });
         MagnetisationSquaredList.Add(
             new List<double>(3)
             {
-                temperature, singleRunSimulation.MagnetisationSquared, singleRunSimulation.MagnetisationSquaredSigma
+                temperature, observables.MagnetisationSquared, observables.MagnetisationSquaredSigma
             });
         MagnetisationAbsoluteList.Add(
             new List<double>(3)
             {
                 temperature,
-                singleRunSimulation.MagnetisationAbsolute,
-                singleRunSimulation.MagnetisationAbsoluteSigma
+                observables.MagnetisationAbsolute,
+                observables.MagnetisationAbsoluteSigma
             });
         EnergyList.Add(
-            new List<double>(3) { temperature, singleRunSimulation.Energy, singleRunSimulation.EnergySigma });
+            new List<double>(3) { temperature, observables.Energy, observables.EnergySigma });
         SusceptibilityList.Add(
             new List<double>(3)
             {
-                temperature, singleRunSimulation.Susceptibility, singleRunSimulation.SusceptibilitySigma
+                temperature, observables.Susceptibility, observables.SusceptibilitySigma
             });
         RenormalisedCorrelationLengthList.Add(
             new List<double>(3)
             {
                 temperature,
-                singleRunSimulation.RenormalisedCorrelationLength,
-                singleRunSimulation.RenormalisedCorrelationLengthSigma
+                observables.RenormalisedCorrelationLength,
+                observables.RenormalisedCorrelationLengthSigma
             });
     }
 

@@ -5,6 +5,9 @@ using IsingMonteCarlo.Representations.SpinDynamics;
 
 namespace IsingMonteCarlo.Representations;
 
+/// <summary>
+///     Ising model Monte-Carlo simulation where the observables can be read at any time (or iteration) t.
+/// </summary>
 public sealed class IsingMonteCarloSimulation
 {
     private const int LatticeSizeLowerBound = 3;

@@ -1,6 +1,6 @@
 namespace IsingMonteCarlo.Models;
 
-public record struct InitialLatticeData(List<int> SpinConfiguration, double boltzmannTemperature, int previousIterationCount)
+public record class InitialLatticeData(List<int> SpinConfiguration, double boltzmannTemperature, int previousIterationCount)
 {
     public static implicit operator (List<int> SpinConfiguration, double boltzmannTemperature, int previousIterationCount)(InitialLatticeData value)
     {
