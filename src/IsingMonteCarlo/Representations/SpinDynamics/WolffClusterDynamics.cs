@@ -103,7 +103,8 @@ public sealed class WolffClusterDynamics : ISpinDynamics
         {
             if (verbose)
             {
-                Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining.");
+                Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining...");
+                Console.Write("\r");
             }
             while (_clusterQueue.Count > 0)
             {

@@ -6,69 +6,50 @@ namespace IsingMonteCarlo.Services;
 public static class Renormaliser
 {
     private static readonly int RenormalisationSize = 3;
-    private const int TwoPowNine = 512;
-    private const int ThreePowSix = 729;
 
     public static void GenerateRenormalisedLatticeSpinConfigurationImages(
         NearestNeighbourNDIsingLattice<int> initialLattice,
         int finalLatticeSizeLimit,
         double temperature = double.NaN,
-        bool resize = true) =>
-        GenerateRenormalisedLatticeSpinConfigurationImages(
-            GenerateRenormalisedLattices(initialLattice, finalLatticeSizeLimit),
-            temperature,
-            resize);
+        bool resize = true)
+    {
+        var startingLattice = initialLattice;
+        while (startingLattice.LatticeLength >= finalLatticeSizeLimit)
+        {
+            startingLattice = GenerateRenormalisedLattice(initialLattice, finalLatticeSizeLimit);
+            GenerateRenormalisedLatticeSpinConfigurationImage(
+                startingLattice,
+                temperature,
+                resize);
+        }
+    }
 
-    public static void GenerateRenormalisedLatticeSpinConfigurationImages(
-        IEnumerable<NearestNeighbourNDIsingLattice<int>> lattices,
+    public static void GenerateRenormalisedLatticeSpinConfigurationImage(
+        NearestNeighbourNDIsingLattice<int> lattice,
         double temperature,
         bool resize = true)
     {
-        var enumeratedLattices = lattices?.ToList() ?? throw new ArgumentNullException(nameof(lattices));
-        var initialSpinConfigurations = enumeratedLattices.Select(l => l.Spins).ToList();
-        var latticeLengths = enumeratedLattices.Select(l => l.LatticeLength).ToList();
+        var initialSpinConfiguration = lattice.Spins;
+        var latticeLength = lattice.LatticeLength;
 
-        var bitmaps = initialSpinConfigurations.Select(DrawHelpers.GenerateGrayBitmapFrom2DList);
+        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(initialSpinConfiguration);
 
-        var i = 0;
-        foreach (var bitmap in bitmaps)
-        {
-            DrawHelpers.SaveBitmapAsPNG(
-                bitmap,
-                latticeLengths[i],
-                temperature,
-                resize);
-            ++i;
-        }
+        DrawHelpers.SaveBitmapAsPNG(
+            bitmap,
+            latticeLength,
+            temperature,
+            resize);
     }
 
-    public static List<NearestNeighbourNDIsingLattice<int>> GenerateRenormalisedLattices(
+    public static NearestNeighbourNDIsingLattice<int> GenerateRenormalisedLattice(
         NearestNeighbourNDIsingLattice<int> initialLattice,
-        int finalLatticeSizeLimit)
-    {
-        var renormalisedLatticeConfigurations = new List<NearestNeighbourNDIsingLattice<int>> { initialLattice };
-        while (initialLattice.LatticeLength >= finalLatticeSizeLimit)
-        {
-            initialLattice = PerformOneRenormalisationStepWithMajorityRule(initialLattice);
-            renormalisedLatticeConfigurations.Add(initialLattice);
-        }
+        int finalLatticeSizeLimit) =>
+        PerformOneRenormalisationStepWithMajorityRule(initialLattice);
 
-        return renormalisedLatticeConfigurations;
-    }
-
-    public static List<List<int>> GenerateRenormalisedLatticeSpinConfigurationSpins(
+    public static List<int> GenerateRenormalisedLatticeSpinConfigurationSpins(
         NearestNeighbourNDIsingLattice<int> initialLattice,
-        int finalLatticeSizeLimit)
-    {
-        var renormalisedLatticeConfigurations = new List<List<int>>();
-        while (initialLattice.LatticeLength >= finalLatticeSizeLimit)
-        {
-            initialLattice = PerformOneRenormalisationStepWithMajorityRule(initialLattice);
-            renormalisedLatticeConfigurations.Add(initialLattice.Spins);
-        }
-
-        return renormalisedLatticeConfigurations;
-    }
+        int finalLatticeSizeLimit) =>
+        PerformOneRenormalisationStepWithMajorityRule(initialLattice).Spins;
 
     private static NearestNeighbourNDIsingLattice<int> PerformOneRenormalisationStepWithMajorityRule(
         NearestNeighbourNDIsingLattice<int> initialLattice)

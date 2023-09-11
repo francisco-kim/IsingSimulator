@@ -132,9 +132,10 @@ public class Fast2DIsingMonteCarloSimulator
 
         if (spinUpdateMethod is SpinUpdateMethod.Wolff && _clusterQueue.Count != 0)
         {
+            Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining...");
+            //Console.Write("\r");
             while (_clusterQueue.Count > 0)
             {
-                Console.Write($"Dequeuing last cluster: {_clusterQueue.Count} spins remaining.");
                 FlipSpinWithWolff(beta);
             }
         }
@@ -167,13 +168,13 @@ public class Fast2DIsingMonteCarloSimulator
         string? filename,
         int latticeLength,
         double temperature,
-        long thermalisationStepsIn100MCSweepUnit = 1,
+        double thermalisationStepsIn100MCSweepUnit = 1.0,
         SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
         bool resetIterationCountDuringSave = false,
         int? randomSeed = null,
         bool verbose = true)
     {
-        var (initialSpinConfiguration, _, previousIterationCountIn100MCSweepUnit) =
+        var (initialSpinConfiguration, _, previousIterationCountInMCSweepUnit) =
             SpinConfigurationBuilder.InitialiseLattice(
                 filename,
                 dimension: 2,
@@ -187,7 +188,7 @@ public class Fast2DIsingMonteCarloSimulator
         {
             simulation.RunVerboseMonteCarlo(
                 1.0 / temperature,
-                thermalisationStepsIn100MCSweepUnit * Hundred * latticeLength * latticeLength,
+                Convert.ToInt64(thermalisationStepsIn100MCSweepUnit * Hundred * latticeLength * latticeLength),
                 spinUpdateMethod,
                 saveLattice: false);
         }
@@ -195,19 +196,20 @@ public class Fast2DIsingMonteCarloSimulator
         {
             simulation.RunMonteCarlo(
                 1.0 / temperature,
-                thermalisationStepsIn100MCSweepUnit * Hundred * latticeLength * latticeLength,
+                Convert.ToInt64(thermalisationStepsIn100MCSweepUnit * Hundred * latticeLength * latticeLength),
                 spinUpdateMethod,
                 saveLattice: false);
         }
 
-        var iterationStepsIn100MCSweepUnit = resetIterationCountDuringSave
-                                 ? thermalisationStepsIn100MCSweepUnit
-                                 : previousIterationCountIn100MCSweepUnit
-                                 + thermalisationStepsIn100MCSweepUnit;
+        var iterationStepsInMCSweepUnit = resetIterationCountDuringSave
+                                              ? Convert.ToInt64(thermalisationStepsIn100MCSweepUnit * Hundred)
+                                              : Convert.ToInt64(
+                                                  previousIterationCountInMCSweepUnit
+                                                + thermalisationStepsIn100MCSweepUnit * Hundred);
         FileHelpers.SaveSpinConfiguration(
             simulation.GetSpinConfiguration(),
             temperature,
-            iterationStepsIn100MCSweepUnit,
+            iterationStepsInMCSweepUnit,
             isInByte: true);
 
         Console.WriteLine(
@@ -312,14 +314,14 @@ public class Fast2DIsingMonteCarloSimulator
         return lattice;
     }
 
-    private void SaveSpinConfiguration(double temperature, long iterationCountIn100MCSweepUnit)
+    private void SaveSpinConfiguration(double temperature, long iterationCountInMCSweepUnit)
     {
         var latticeConfiguration = GetSpinConfiguration();
 
         FileHelpers.SaveSpinConfiguration(
             latticeConfiguration,
             temperature,
-            iterationCountIn100MCSweepUnit,
+            iterationCountInMCSweepUnit,
             isInByte: true);
     }
 

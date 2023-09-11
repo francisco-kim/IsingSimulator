@@ -146,8 +146,26 @@ public class DrawHelpers
     public static void SaveBitmapAsPNG(Bitmap bitmap, int latticeLength, double temperature, bool resize = false, int? size = null)
     {
         var filename = FileHelpers.GetFilename(latticeLength, temperature, iterationCountInMCSweepUnit: 0);
-        var rootDirectory = FileHelpers.GetDataLatticeLengthSubdirectory(latticeLength);
-        var fullFilename = Path.GetFullPath(Path.Combine(rootDirectory, "images" ,filename + ".png"));
+        var imagesDirectory =
+            FileHelpers.GetDataRootDirectory(new[] { Convert.ToString(latticeLength), "images" });
+
+        if (!Directory.Exists(imagesDirectory))
+        {
+            Directory.CreateDirectory(imagesDirectory);
+        }
+
+        var fullFilename = Path.GetFullPath(Path.Combine(imagesDirectory ,filename + ".png"));
+
+        if (File.Exists(fullFilename))
+        {
+            var iterationCount = 0;
+            while (File.Exists(fullFilename))
+            {
+                ++iterationCount;
+                filename = FileHelpers.GetFilename(latticeLength, temperature, iterationCount);
+                fullFilename = Path.GetFullPath(Path.Combine(imagesDirectory, filename + ".png"));
+            }
+        }
 
         if (resize && size is null)
         {
@@ -167,5 +185,7 @@ public class DrawHelpers
         {
             bitmap.Save(fullFilename, ImageFormat.Png);
         }
+
+        Console.WriteLine($"Saved as {filename}.png.");
     }
 }

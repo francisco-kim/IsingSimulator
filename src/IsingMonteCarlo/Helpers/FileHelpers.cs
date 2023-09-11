@@ -1,4 +1,7 @@
-﻿using IsingMonteCarlo.Representations;
+﻿using System.Collections.Concurrent;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
+using IsingMonteCarlo.Representations;
 
 namespace IsingMonteCarlo.Helpers;
 
@@ -11,10 +14,12 @@ public static class FileHelpers
         bool isInByte = true)
     {
         var enumeratedSpins = spins.ToList() ?? throw new ArgumentException(nameof(spins));
-        var (filename, dataDirectory) = GetFilename(
-            Convert.ToInt32(Math.Sqrt(enumeratedSpins.Count)),
+        var latticeLength = Convert.ToInt32(Math.Sqrt(enumeratedSpins.Count));
+        var filename = GetFilename(
+            latticeLength,
             temperature,
             iterationCountInMCSweepUnit);
+        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLength);
         var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(dataDirectory, filename));
 
         var extension = ".dat";
@@ -42,7 +47,7 @@ public static class FileHelpers
         }
 
         Console.WriteLine(
-            $"Filename: {completePathWithoutFileExtension + extension}\n");
+            $"Spins configuration saved in {completePathWithoutFileExtension + extension}.\n");
     }
 
     public static List<int> LoadSpinConfiguration(
@@ -89,29 +94,36 @@ public static class FileHelpers
 
     public static string? GetLastDataFileWithLatticeSizeAndTemperature(int latticeLength, double temperature)
     {
-        var dataDirectory = GetDataRootDirectory();
-        var firstFileName = new DirectoryInfo(dataDirectory)
+        var dataDirectory = GetDataRootDirectory(new[] { latticeLength.ToString() });
+
+        if (!Directory.Exists(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+        }
+
+        var lastFileName = new DirectoryInfo(dataDirectory)
                             .EnumerateFiles()
                             .Where(file => file.Name.Split('.').Last() == "dat" || file.Name.Split('.').Last() == "bin")
+                            .OrderBy(file => file.Name)
                             .LastOrDefault(
                                 file => filenameContainsCorrectLatticeLengthAndTemperature(
                                     GetFilenameData(file.Name),
                                     latticeLength,
                                     temperature));
 
-        return firstFileName?.FullName;
+        return lastFileName?.FullName ?? null;
     }
 
     public static string GetFullPathWithFilename(string filename)
     {
         var filenameData = GetFilenameData(filename);
 
-        var latticeSize = Convert.ToInt32(filenameData[index: 0]);
+        var latticeSize = Convert.ToInt32(filenameData[index: 0].Split(Path.DirectorySeparatorChar).Last());
 
-        return GetDataRootDirectory(new string[] { Convert.ToString(latticeSize), filename });
+        return GetDataRootDirectory(new[] { Convert.ToString(latticeSize), filename });
     }
 
-    public static string GetDataRootDirectory(string[]? namesToCombine = null)
+    public static string GetDataRootDirectory(IEnumerable<string>? namesToCombine = null)
     {
         var workingDirectory = Directory.GetCurrentDirectory();
         var rootParentDirectory = Directory.GetParent(workingDirectory)
@@ -123,28 +135,26 @@ public static class FileHelpers
         {
             return Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data"));
         }
-        
-        var combinedPath = new[] {rootDirectory.FullName, "data"};
-        foreach (var name in namesToCombine)
-        {
-            combinedPath.Append(name);
-        }
 
-        return Path.GetFullPath(Path.Combine(combinedPath));
+        var enumeratedNamesToCombine = namesToCombine.ToList();
+        var combinedPath = new List<string> { rootDirectory.FullName, "data" };
+        combinedPath.AddRange(enumeratedNamesToCombine);
+        var resultingPath = combinedPath.ToArray() ?? throw new ArgumentNullException(nameof(combinedPath));
+
+        return Path.GetFullPath(Path.Combine(resultingPath));
     }
 
     public static string GetDataLatticeLengthSubdirectory(int latticeLength)
     {
+        // Working directory from launch.json
         var workingDirectory = Directory.GetCurrentDirectory();
-        var rootParentDirectory = Directory.GetParent(workingDirectory)
+        var rootDirectory = Directory.GetParent(workingDirectory)?.Parent?.Parent?.Parent?.Parent
             ?? throw new ArgumentNullException(nameof(workingDirectory));
-        var rootDirectory = Directory.GetParent(rootParentDirectory.FullName)
-            ?? throw new ArgumentNullException(nameof(rootParentDirectory));
 
         return Path.GetFullPath(Path.Combine(rootDirectory.FullName, "data", Convert.ToString(latticeLength)));
     }
 
-    public static (string Filename, string DataDirectory) GetFilename(int latticeLength,
+    public static string GetFilename(int latticeLength,
                                                                       double temperature,
                                                                       long iterationCountInMCSweepUnit)
     {
@@ -172,7 +182,7 @@ public static class FileHelpers
                          + iterationCountInMCSweepUnit.ToString(format: "D8");
         }
 
-        return (filename, dataDirectory);
+        return filename;
     }
 
     public static List<string> GetFilenameData(string filename)
@@ -186,6 +196,43 @@ public static class FileHelpers
         }
 
         return filenameData;
+    }
+
+    public static bool FoundFileInLatticeLengthFolder(int latticeLengthToMatchFolderName, out string? filename)
+    {
+        var filesInLatticeLengthFolder = Directory
+                                         .GetFiles(GetDataLatticeLengthSubdirectory(latticeLengthToMatchFolderName))
+                                         .Where(
+                                             file => file.Split(separator: '.').Last() == "dat"
+                                                  || file.Split(separator: '.').Last() == "bin");
+        foreach (var file in filesInLatticeLengthFolder)
+        {
+            Console.WriteLine(file);
+        }
+        Console.WriteLine(value: "Enter file name (.dat or .bin): ");
+
+        var filenameInput = Console.ReadLine() ?? throw new ArgumentNullException();
+
+        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLengthToMatchFolderName);
+        var filenameWithDatExtension = filenameInput + ".dat";
+        var filenameWithBinExtension = filenameInput + ".bin";
+        if (File.Exists(filenameWithBinExtension))
+        {
+            Console.WriteLine($"Found {filenameWithBinExtension}.\n");
+            filename = filenameWithBinExtension;
+            return true;
+        }
+
+        if (File.Exists(filenameWithDatExtension))
+        {
+            Console.WriteLine($"Found {filenameWithDatExtension}.\n");
+            filename = filenameWithDatExtension;
+            return true;
+        }
+
+        Console.WriteLine("No such file found.\n");
+        filename = null;
+        return false;
     }
 
     private static bool filenameContainsCorrectLatticeLengthAndTemperature(

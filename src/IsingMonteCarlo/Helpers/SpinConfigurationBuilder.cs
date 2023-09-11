@@ -16,9 +16,9 @@ public static class SpinConfigurationBuilder
 
             var spinConfiguration =  FileHelpers.LoadSpinConfiguration(fullPathWithFilename,
                                                          out var boltzmannTemperature,
-                                                         out var previousIterationCountIn100MCSweepUnit);
+                                                         out var previousIterationCountInMCSweepUnit);
 
-            return (spinConfiguration, boltzmannTemperature, previousIterationCountIn100MCSweepUnit);
+            return (spinConfiguration, boltzmannTemperature, previousIterationCountInMCSweepUnit);
         }
 
         var totalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));

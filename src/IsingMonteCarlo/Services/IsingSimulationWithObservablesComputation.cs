@@ -7,6 +7,7 @@ namespace IsingMonteCarlo.Services;
 public sealed class IsingSimulationWithObservablesComputation
 {
     private const int ThermalisationStepsInMCSweepUnit = 20_000;
+    private const double Hundred = 100;
 
     private readonly SpinUpdateMethod _spinUpdateMethod;
     private readonly double _temperature;
@@ -17,7 +18,7 @@ public sealed class IsingSimulationWithObservablesComputation
     private readonly int _dimension;
     private readonly int _latticeLength;
     private readonly int? _randomSeed;
-    private readonly int _previousIterationCount;
+    private readonly int _previousIterationCountInMCSweepUnit;
 
     public IsingSimulationWithObservablesComputation(
         string? filename,
@@ -41,7 +42,7 @@ public sealed class IsingSimulationWithObservablesComputation
         _randomSeed = randomSeed;
         _spinUpdateMethod = spinUpdateMethod;
 
-        var (initialSpinConfiguration, _, previousIterationCount) =
+        var (initialSpinConfiguration, _, previousIterationCountInMCSweepUnit) =
             SpinConfigurationBuilder.InitialiseLattice(
                 filename,
                 dimension,
@@ -49,7 +50,7 @@ public sealed class IsingSimulationWithObservablesComputation
                 initialSpinDownRatio,
                 randomSeed);
 
-        _previousIterationCount = previousIterationCount;
+        _previousIterationCountInMCSweepUnit = previousIterationCountInMCSweepUnit;
 
         Simulation = new IsingMonteCarloSimulator(dimension, latticeLength, initialSpinConfiguration);
     }
@@ -179,6 +180,7 @@ public sealed class IsingSimulationWithObservablesComputation
         var renormalisedCorrelationLengthString = $" Xi = {renormalisedCorrelationLength} +- {renormalisedCorrelationLengthSigma}";
         var susceptibilityString = $"Chi = {susceptibility} +- {susceptibilitySigma}";
 
+        Console.WriteLine("\n");
         Console.WriteLine(magnetisationString);
         Console.WriteLine(magnetisationSquaredString);
         Console.WriteLine(magnetisationAbsoluteString + "\n");
@@ -221,11 +223,8 @@ public sealed class IsingSimulationWithObservablesComputation
 
         void writeMeasurements()
         {
-            var measurementDataDirectory = FileHelpers.GetDataRootDirectory(new string[]
-            {
-            Convert.ToString(_latticeLength),
-            "measurements"
-            });
+            var measurementDataDirectory =
+                FileHelpers.GetDataRootDirectory(new[] { Convert.ToString(_latticeLength), "measurements" });
 
             if (!Directory.Exists(measurementDataDirectory))
             {
@@ -233,7 +232,7 @@ public sealed class IsingSimulationWithObservablesComputation
             }
 
             var completePath =
-                Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_temperature:0.00000}", ".txt"));
+                Path.GetFullPath(Path.Combine(measurementDataDirectory, $"{_latticeLength}_{_temperature:0.00000}.txt"));
 
             var results = new List<string>
             {
@@ -261,7 +260,7 @@ public sealed class IsingSimulationWithObservablesComputation
     }
 
     public void Thermalise(
-        int thermalisationStepsInLatticeSizeUnit = ThermalisationStepsInMCSweepUnit,
+        int thermalisationStepsInMCSweepUnit = ThermalisationStepsInMCSweepUnit,
         SpinUpdateMethod spinUpdateMethod = SpinUpdateMethod.Wolff,
         bool saveLattice = true,
         bool resetIterationCountDuringSave = false)
@@ -270,23 +269,23 @@ public sealed class IsingSimulationWithObservablesComputation
             _beta,
             _j,
             _h,
-            thermalisationStepsInLatticeSizeUnit * Simulation.TotalSpinsCount,
+            thermalisationStepsInMCSweepUnit * Simulation.TotalSpinsCount,
             spinUpdateMethod,
             _jY,
             _randomSeed);
 
         if (saveLattice)
         {
-            var iterationSteps = resetIterationCountDuringSave ? thermalisationStepsInLatticeSizeUnit
-                                                                 * Simulation.TotalSpinsCount
-                                                                : _previousIterationCount
-                                                                  + thermalisationStepsInLatticeSizeUnit
-                                                                  * Simulation.TotalSpinsCount;
+            var iterationStepsIn100MCSweepUnit = resetIterationCountDuringSave
+                                                     ? thermalisationStepsInMCSweepUnit / Hundred
+                                                     : (_previousIterationCountInMCSweepUnit
+                                                      + thermalisationStepsInMCSweepUnit)
+                                                     / Hundred;
             FileHelpers.SaveSpinConfiguration(
                 Simulation.Lattice.Spins,
                 _temperature,
-                iterationSteps,
-                isInByte: false);
+                Convert.ToInt32(iterationStepsIn100MCSweepUnit),
+                isInByte: true);
         }
 
         Console.WriteLine(
