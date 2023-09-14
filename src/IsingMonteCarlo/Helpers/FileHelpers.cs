@@ -15,11 +15,18 @@ public static class FileHelpers
     {
         var enumeratedSpins = spins.ToList() ?? throw new ArgumentException(nameof(spins));
         var latticeLength = Convert.ToInt32(Math.Sqrt(enumeratedSpins.Count));
+
+        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLength);
+        if (!Directory.Exists(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+        }
+
         var filename = GetFilename(
             latticeLength,
             temperature,
             iterationCountInMCSweepUnit);
-        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLength);
+
         var completePathWithoutFileExtension = Path.GetFullPath(Path.Combine(dataDirectory, filename));
 
         var extension = ".dat";
@@ -156,13 +163,6 @@ public static class FileHelpers
                                      double temperature,
                                      long iterationCountInMCSweepUnit)
     {
-        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLength);
-
-        if (!Directory.Exists(dataDirectory))
-        {
-            Directory.CreateDirectory(dataDirectory);
-        }
-
         string filename;
         if (iterationCountInMCSweepUnit < 0)
         {
@@ -208,23 +208,14 @@ public static class FileHelpers
         {
             Console.WriteLine(file);
         }
-        Console.WriteLine(value: "Enter file name without the extension (.dat or .bin): ");
 
+        Console.WriteLine(value: "Enter file name (with .dat or .bin): ");
         var filenameInput = Console.ReadLine() ?? throw new ArgumentNullException();
 
-        var filenameWithDatExtension = Path.GetFullPath(Path.Combine(dataDirectory, filenameInput + ".dat"));
-        var filenameWithBinExtension = Path.GetFullPath(Path.Combine(dataDirectory, filenameInput + ".bin"));
-        if (File.Exists(filenameWithBinExtension))
+        filename = Path.GetFullPath(Path.Combine(dataDirectory, filenameInput));
+        if (File.Exists(filename))
         {
-            Console.WriteLine($"Found {filenameWithBinExtension}.\n");
-            filename = filenameWithBinExtension;
-            return true;
-        }
-
-        if (File.Exists(filenameWithDatExtension))
-        {
-            Console.WriteLine($"Found {filenameWithDatExtension}.\n");
-            filename = filenameWithDatExtension;
+            Console.WriteLine($"Found {filename}.\n");
             return true;
         }
 

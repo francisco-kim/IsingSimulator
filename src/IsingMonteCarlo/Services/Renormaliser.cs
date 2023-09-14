@@ -15,10 +15,12 @@ public static class Renormaliser
     {
         var startingLattice = initialSpinConfiguration.ToList()
                            ?? throw new ArgumentNullException(nameof(initialSpinConfiguration));
+
+        var numberedFolderName = GetSubFolderNumberedName("renormalisation").ToArray();
         GenerateLatticeSpinConfigurationImage(
             startingLattice,
             temperature,
-            "renormalisation",
+            numberedFolderName,
             resize);
 
         var latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
@@ -29,7 +31,7 @@ public static class Renormaliser
             GenerateLatticeSpinConfigurationImage(
                 startingLattice,
                 temperature,
-                "renormalisation",
+                numberedFolderName,
                 resize);
         }
     }
@@ -43,10 +45,11 @@ public static class Renormaliser
         var startingLattice = initialSpinConfiguration.ToList()
                            ?? throw new ArgumentNullException(nameof(initialSpinConfiguration));
 
+        var numberedFolderName = GetSubFolderNumberedName("zoom").ToArray();
         GenerateLatticeSpinConfigurationImage(
             startingLattice,
             temperature,
-            "zoom",
+            numberedFolderName,
             resize);
 
         var latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
@@ -57,7 +60,7 @@ public static class Renormaliser
             GenerateLatticeSpinConfigurationImage(
                 startingLattice,
                 temperature,
-                "zoom",
+                numberedFolderName,
                 resize);
         }
     }
@@ -65,7 +68,7 @@ public static class Renormaliser
     public static void GenerateLatticeSpinConfigurationImage(
         IEnumerable<int> initialSpinConfiguration,
         double temperature,
-        string folderName,
+        IEnumerable<string> folderName,
         bool resize = true)
     {
         var latticeSpinConfiguration = initialSpinConfiguration.ToList()
@@ -77,9 +80,9 @@ public static class Renormaliser
         DrawHelpers.SaveBitmapAsPNGInSpecifiedFolder(
             bitmap,
             latticeLength,
-            folderName,
             temperature,
-            resize);
+            folderName,
+            resize: resize);
     }
 
     public static List<int> GenerateRenormalisedLattice(
@@ -154,5 +157,25 @@ public static class Renormaliser
         }
 
         return finalLatticeConfiguration;
+    }
+
+    private static IEnumerable<string> GetSubFolderNumberedName(string folderName)
+    {
+        var newFolderName = new string[] { };
+        for (var folderIndex = 0; folderIndex < 999; folderIndex++)
+        {
+            var imagesDirectory =
+                FileHelpers.GetDataRootDirectory(new[] { folderName, folderIndex.ToString(format: "D3") });
+
+            if (Directory.Exists(imagesDirectory))
+            {
+                continue;
+            }
+
+            newFolderName = new[] { folderName, folderIndex.ToString(format: "D3") };
+            break;
+        }
+
+        return newFolderName;
     }
 }

@@ -146,14 +146,15 @@ public class DrawHelpers
     public static void SaveBitmapAsPNGInSpecifiedFolder(
         Bitmap bitmap,
         int latticeLength,
-        string folderName,
         double temperature,
+        IEnumerable<string>? subPathNames = null,
         bool resize = false,
         int? size = null)
     {
         var filename = FileHelpers.GetFilename(latticeLength, temperature, iterationCountInMCSweepUnit: 0);
+
         var imagesDirectory =
-            FileHelpers.GetDataRootDirectory(new[] { folderName, "images" });
+            FileHelpers.GetDataRootDirectory(subPathNames ?? new[] { Convert.ToString(latticeLength), "images" });
 
         if (!Directory.Exists(imagesDirectory))
         {
@@ -192,7 +193,7 @@ public class DrawHelpers
             bitmap.Save(fullFilename, ImageFormat.Png);
         }
 
-        Console.WriteLine($"Saved as {filename}.png.");
+        Console.WriteLine($"File {fullFilename} saved.");
     }
 
     public static void SaveBitmapAsPNG(
@@ -204,8 +205,7 @@ public class DrawHelpers
         SaveBitmapAsPNGInSpecifiedFolder(
             bitmap,
             latticeLength,
-            Convert.ToString(latticeLength),
             temperature,
-            resize,
-            size);
+            resize: resize,
+            size: size);
 }
