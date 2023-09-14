@@ -143,11 +143,17 @@ public class DrawHelpers
         return result;
     }
 
-    public static void SaveBitmapAsPNG(Bitmap bitmap, int latticeLength, double temperature, bool resize = false, int? size = null)
+    public static void SaveBitmapAsPNGInSpecifiedFolder(
+        Bitmap bitmap,
+        int latticeLength,
+        string folderName,
+        double temperature,
+        bool resize = false,
+        int? size = null)
     {
         var filename = FileHelpers.GetFilename(latticeLength, temperature, iterationCountInMCSweepUnit: 0);
         var imagesDirectory =
-            FileHelpers.GetDataRootDirectory(new[] { Convert.ToString(latticeLength), "images" });
+            FileHelpers.GetDataRootDirectory(new[] { folderName, "images" });
 
         if (!Directory.Exists(imagesDirectory))
         {
@@ -188,4 +194,18 @@ public class DrawHelpers
 
         Console.WriteLine($"Saved as {filename}.png.");
     }
+
+    public static void SaveBitmapAsPNG(
+        Bitmap bitmap,
+        int latticeLength,
+        double temperature,
+        bool resize = false,
+        int? size = null) =>
+        SaveBitmapAsPNGInSpecifiedFolder(
+            bitmap,
+            latticeLength,
+            Convert.ToString(latticeLength),
+            temperature,
+            resize,
+            size);
 }

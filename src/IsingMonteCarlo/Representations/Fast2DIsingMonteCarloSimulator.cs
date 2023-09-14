@@ -218,6 +218,28 @@ public class Fast2DIsingMonteCarloSimulator
         return simulation.GetSpinConfiguration();
     }
 
+    public static int[][] Get2DArrayFrom1DArray(IEnumerable<int> spinConfiguration)
+    {
+        var spins = spinConfiguration.ToList() ?? throw new ArgumentNullException(nameof(spinConfiguration));
+        var latticeLength = Convert.ToInt32(Math.Sqrt(spins.Count));
+
+        var lattice = new int[latticeLength][];
+        for (var i = 0; i < latticeLength; ++i)
+        {
+            lattice[i] = new int[latticeLength];
+        }
+
+        for (var y = 0; y < latticeLength; ++y)
+        {
+            for (var x = 0; x < latticeLength; ++x)
+            {
+                lattice[x][y] = spins[x + y * latticeLength];
+            }
+        }
+
+        return lattice;
+    }
+
     private bool FlipWithGlauber(
         double randomProbability,
         int x,
@@ -292,27 +314,6 @@ public class Fast2DIsingMonteCarloSimulator
             new[] { x, (y + _latticeLength - 1) % _latticeLength }, // Up
             new[] { x, (y + 1) % _latticeLength } // Down
         };
-
-    private int[][] Get2DArrayFrom1DArray(IEnumerable<int> spinConfiguration)
-    {
-        var spins = spinConfiguration?.ToList() ?? throw new ArgumentNullException(nameof(spinConfiguration));
-
-        var lattice = new int[_latticeLength][];
-        for (var i = 0; i < _latticeLength; ++i)
-        {
-            lattice[i] = new int[_latticeLength];
-        }
-
-        for (var y = 0; y < _latticeLength; ++y)
-        {
-            for (var x = 0; x < _latticeLength; ++x)
-            {
-                lattice[x][y] = spins[x + y * _latticeLength];
-            }
-        }
-
-        return lattice;
-    }
 
     private void SaveSpinConfiguration(double temperature, long iterationCountInMCSweepUnit)
     {

@@ -245,14 +245,14 @@ public sealed class IsingSimulationWithObservablesComputation
                 renormalisedCorrelationLengthString,
                 susceptibilityString,
                 "\n",
-                $"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationList) + "}}",
-                $"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationSquaredList) + "}}",
-                $"mAbs = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationAbsoluteList) + "}}",
-                $"energy = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", energyList) + "}}",
-                $"xi_x = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthXList) + "}}",
-                $"xi_y = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthYList) + "}}",
-                $"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", renormalisedCorrelationLengthList) + "}}",
-                $"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", susceptibilityList) + "}}"
+                $"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationList) + "}};",
+                $"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationSquaredList) + "}};",
+                $"mAbs = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationAbsoluteList) + "}};",
+                $"energy = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", energyList) + "}};",
+                $"xiX = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthXList) + "}};",
+                $"xiY = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthYList) + "}};",
+                $"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", renormalisedCorrelationLengthList) + "}};",
+                $"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", susceptibilityList) + "}};"
             };
 
             File.WriteAllLines(completePath, results);

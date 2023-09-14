@@ -126,10 +126,8 @@ public static class FileHelpers
     public static string GetDataRootDirectory(IEnumerable<string>? namesToCombine = null)
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var rootParentDirectory = Directory.GetParent(workingDirectory)
-            ?? throw new ArgumentNullException(nameof(workingDirectory));
-        var rootDirectory = Directory.GetParent(rootParentDirectory.FullName)
-            ?? throw new ArgumentNullException(nameof(rootParentDirectory));
+        var rootDirectory = Directory.GetParent(workingDirectory).Parent?.Parent?.Parent?.Parent
+                         ?? throw new ArgumentNullException(nameof(workingDirectory));
 
         if (namesToCombine is null)
         {
@@ -155,8 +153,8 @@ public static class FileHelpers
     }
 
     public static string GetFilename(int latticeLength,
-                                                                      double temperature,
-                                                                      long iterationCountInMCSweepUnit)
+                                     double temperature,
+                                     long iterationCountInMCSweepUnit)
     {
         var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLength);
 
@@ -200,8 +198,9 @@ public static class FileHelpers
 
     public static bool FoundFileInLatticeLengthFolder(int latticeLengthToMatchFolderName, out string? filename)
     {
+        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLengthToMatchFolderName);
         var filesInLatticeLengthFolder = Directory
-                                         .GetFiles(GetDataLatticeLengthSubdirectory(latticeLengthToMatchFolderName))
+                                         .GetFiles(dataDirectory)
                                          .Where(
                                              file => file.Split(separator: '.').Last() == "dat"
                                                   || file.Split(separator: '.').Last() == "bin");
@@ -209,13 +208,12 @@ public static class FileHelpers
         {
             Console.WriteLine(file);
         }
-        Console.WriteLine(value: "Enter file name (.dat or .bin): ");
+        Console.WriteLine(value: "Enter file name without the extension (.dat or .bin): ");
 
         var filenameInput = Console.ReadLine() ?? throw new ArgumentNullException();
 
-        var dataDirectory = GetDataLatticeLengthSubdirectory(latticeLengthToMatchFolderName);
-        var filenameWithDatExtension = filenameInput + ".dat";
-        var filenameWithBinExtension = filenameInput + ".bin";
+        var filenameWithDatExtension = Path.GetFullPath(Path.Combine(dataDirectory, filenameInput + ".dat"));
+        var filenameWithBinExtension = Path.GetFullPath(Path.Combine(dataDirectory, filenameInput + ".bin"));
         if (File.Exists(filenameWithBinExtension))
         {
             Console.WriteLine($"Found {filenameWithBinExtension}.\n");

@@ -181,22 +181,23 @@ public sealed class IsingSimulationAcrossTemperatureRange
             var results = new List<string>
             {
                 "m = "
-              + "{" + string.Join(", ", magnetisationList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+              + "{" + string.Join(", ", magnetisationList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "mSquared = "
-              + "{" + string.Join(", ", magnetisationSquaredList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+              + "{" + string.Join(", ", magnetisationSquaredList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "mAbs = "
-              + "{" + string.Join(", ", magnetisationAbsoluteList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+              + "{" + string.Join(", ", magnetisationAbsoluteList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "energy = "
-              + "{" + string.Join(", ", energyList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
-                "xi_x = "
-              + "{" + string.Join(", ", correlationLengthXList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
-                "xi_y = "
-              + "{" + string.Join(", ", correlationLengthYList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+              + "{" + string.Join(", ", energyList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
+                "xiX = "
+              + "{" + string.Join(", ", correlationLengthXList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
+                "xiY = "
+              + "{" + string.Join(", ", correlationLengthYList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "xi = "
-              + "{" + string.Join(", ", renormalisedCorrelationLengthList.Select(el => "{" + string.Join(", ", el) + "}")) + "}",
+              + "{" + string.Join(", ", renormalisedCorrelationLengthList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "chi = "
-              + "{" + string.Join(", ", susceptibilityList.Select(el => "{" + string.Join(", ", el) + "}")) + "}"
-            };
+              + "{" + string.Join(", ", susceptibilityList.Select(el => "{" + string.Join(", ", el) + "}")) + "};"
+            }.Select(s => s.Replace("E", "10^"))
+             .ToList();
 
             File.WriteAllLines(completePath, results);
         }

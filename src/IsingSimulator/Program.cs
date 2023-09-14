@@ -20,7 +20,8 @@ Console.WriteLine(value: "Option 3: Monte Carlo run across temperature-range");
 Console.WriteLine(value: "Option 4: Thermalisation across temperature-range");
 Console.WriteLine(value: "Option 5: Generate png image");
 Console.WriteLine(value: "Option 6: Renormalise png image");
-Console.WriteLine(value: "Option 7: Continue thermalisation of 3^11\n");
+Console.WriteLine(value: "Option 7: Zoom-in with png image");
+Console.WriteLine(value: "Option 8: Continue thermalisation of 3^11\n");
 
 Console.Write(value: "Please choose one of the above options: ");
 var choice = Convert.ToInt32(Console.ReadLine());
@@ -30,29 +31,28 @@ var latticeLength = 128;
 var boltzmannTemperature = 2.27557; // T_c = 2.2691853 = 2 / ln(1 + sqrt(2))   T_c(L = 128) = 2.27557
 var spinUpdateMethod = SpinUpdateMethod.Wolff;
 
-if (choice is not 7)
+if (choice is not 6 && choice is not 7 && choice is not 8)
 {
-    Console.Write(value: "* Lattice length: ");
+    Console.Write(value: "* Lattice length (max. 19683): ");
     var latticeLengthInput = Console.ReadLine();
     latticeLength = latticeLengthInput is "" ? latticeLength : Convert.ToInt32(latticeLengthInput);
     Console.Write($"      {latticeLength}\n");
+}
 
-    if (choice is 0 or 1 or 5 or 6 or 7)
-    {
-        Console.Write(value: "* Temperature (T_c = 2.26919; T_c(L = 128) = 2.27557): ");
-        var temperatureInput = Console.ReadLine();
-        boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToDouble(temperatureInput);
-        Console.Write($"      {boltzmannTemperature}\n");
-    }
+if (choice is 0 or 1 or 5 or 8)
+{
+    Console.Write(value: "* Temperature (T_c = 2.26919 / T_c(L = 128) = 2.27557 / T_c(L = 19683) = 2.26923): ");
+    var temperatureInput = Console.ReadLine();
+    boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToDouble(temperatureInput);
+    Console.Write($"      {boltzmannTemperature}\n");
+}
 
-
-    if (choice is not 5 && choice is not 6)
-    {
-        Console.Write(value: "* (g)lauber or (w)olff: ");
-        var spinUpdateMethodInput = Console.ReadLine();
-        spinUpdateMethod = spinUpdateMethodInput is "g" ? SpinUpdateMethod.Glauber : SpinUpdateMethod.Wolff;
-        Console.Write($"      Spin dynamics: {spinUpdateMethod}\n");
-    }
+if (choice is 0 or 1 or 2 or 3 or 4)
+{
+    Console.Write(value: "* (g)lauber or (w)olff: ");
+    var spinUpdateMethodInput = Console.ReadLine();
+    spinUpdateMethod = spinUpdateMethodInput is "g" ? SpinUpdateMethod.Glauber : SpinUpdateMethod.Wolff;
+    Console.Write($"      Spin dynamics: {spinUpdateMethod}\n");
 }
 
 var dimension = 2;
@@ -61,9 +61,9 @@ var j = -1.0;
 var h = 0.0;
 int? randomSeed = 41;
 
-var iterationNeededForSingleChiXiMeasurement = totalSpinsCount / 2;
+var iterationNeededForSingleChiXiMeasurement = 10 * totalSpinsCount;
 const int measurementsCountForChiXiExpectationValue = 200;
-const int measurementsRepetitionCountForChiXiVariance = 5;
+const int measurementsRepetitionCountForChiXiVariance = 10;
 
 switch (choice)
 {
@@ -149,7 +149,12 @@ switch (choice)
     }
     case 3 or 4:
     {
-        var thermalisationStepsInMCSweepUnit = 50_000;
+        Console.Write(value: "* Temperatures in the critical region? ((y)es or other): ");
+        var isCriticalRegionInput = Console.ReadLine();
+        var isCriticalRegion = isCriticalRegionInput is "y";
+        Console.Write($"      {isCriticalRegion}\n");
+
+        var thermalisationStepsInMCSweepUnit = 100_000;
         Console.Write(value: "* Thermalisation steps in Monte-Carlo sweep unit: ");
         var thermalisationStepsInMCSweepUnitInput = Console.ReadLine();
         thermalisationStepsInMCSweepUnit = thermalisationStepsInMCSweepUnitInput is ""
@@ -168,7 +173,7 @@ switch (choice)
         //var deltaTemperature = 0.005;
         //var temperatures = Enumerable.Range(0, rangeCount)
         //                             .Select(i => Math.Round((0.005 * i + 2.26) / deltaTemperature) * deltaTemperature);
-        var temperatures = new List<double>
+        var temperaturesInCriticalRegion = new List<double>
         {
             2.26,
             2.265,
@@ -179,6 +184,23 @@ switch (choice)
             2.29,
             2.295
         };
+
+        var temperatures = new List<double>
+        {
+            0.1,
+            0.5,
+            1.0,
+            2.0,
+            2.26,
+            2.27,
+            2.28,
+            2.29,
+            3.0,
+            3.5,
+            4.0
+        };
+
+        var boltzmannTemperatures = isCriticalRegion ? temperaturesInCriticalRegion : temperatures;
 
         var temperatureRangeSimulation = new IsingSimulationAcrossTemperatureRange(
             dimension,
@@ -191,14 +213,14 @@ switch (choice)
         if (choice == 4)
         {
             temperatureRangeSimulation.ThermaliseAcrossTemperatureRange(
-                temperatures,
+                boltzmannTemperatures,
                 thermalisationStepsInMCSweepUnit);
 
             Environment.Exit(exitCode: 0);
         }
 
         temperatureRangeSimulation.RunWithMeasurementsAcrossTemperatureRange(
-            temperatures,
+            boltzmannTemperatures,
             iterationNeededForSingleChiXiMeasurement,
             measurementsCountForChiXiExpectationValue,
             measurementsRepetitionCountForChiXiVariance,
@@ -231,14 +253,17 @@ switch (choice)
     }
     case 6:
     {
+        latticeLength = 19683;
+        boltzmannTemperature = 2.26923;
+
         var filename = getFilename(latticeLength, boltzmannTemperature);
 
         // var filename = $"243_2.26920_1609932704.dat";
         // var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_656100000.dat";
 
-        var initialLattice = FileHelpers.LoadLattice(filename, dimension);
+        var initialSpinConfiguration = FileHelpers.LoadSpinConfiguration(filename, out _, out _);
         Renormaliser.GenerateRenormalisedLatticeSpinConfigurationImages(
-            initialLattice,
+            initialSpinConfiguration,
             finalLatticeSizeLimit: 9,
             boltzmannTemperature,
             resize: true);
@@ -247,7 +272,24 @@ switch (choice)
     case 7:
     {
         latticeLength = 19683;
-        boltzmannTemperature = 2.26923; // T_c = 2.2691853 = 2 / ln(1 + sqrt(2))   T_c(L = 128) = 2.27557
+        boltzmannTemperature = 2.26923;
+
+        var filename = getFilename(latticeLength, boltzmannTemperature);
+
+        // var filename = $"243_2.26920_1609932704.dat";
+        // var filename = $"{latticeLength}_{boltzmannTemperature:0.00000}_656100000.dat";
+
+        var initialSpinConfiguration = FileHelpers.LoadSpinConfiguration(filename, out _, out _);
+        Renormaliser.GenerateZoomedLatticeSpinConfigurationImages(
+            initialSpinConfiguration,
+            finalLatticeSizeLimit: 9,
+            boltzmannTemperature,
+            resize: true);
+        break;
+    }
+    case 8:
+    {
+        latticeLength = 19683;
         Console.Write($"* Lattice length: {latticeLength}\n");
         Console.Write($"* Temperature: {boltzmannTemperature}\n");
         Console.Write("* 100 MC-Sweep Unit: ");
@@ -292,10 +334,10 @@ static string getFilename(int givenLatticeLength, double boltzmannTemperature)
     var filenameCandidate = FileHelpers.GetLastDataFileWithLatticeSizeAndTemperature(givenLatticeLength, boltzmannTemperature);
     if (filenameCandidate is not null)
     {
-        Console.Write($"Found {filenameCandidate}.\n" + "Proceed (y) or load another file (any other character)?\n");
-        var proceedConfirmation = Console.ReadLine();
+        Console.Write($"Found {filenameCandidate}.\n" + "Proceed (enter) or load another file (any other character)?\n");
+        var proceedConfirmation = Console.ReadKey().Key;
 
-        if (proceedConfirmation != "y")
+        if (proceedConfirmation is not ConsoleKey.Enter)
         {
             filenameCandidate = getFilenameFromUserInput(givenLatticeLength);
         }
@@ -310,10 +352,10 @@ static string getFilename(int givenLatticeLength, double boltzmannTemperature)
     static string getFilenameFromUserInput(int latticeLengthToMatchFolderName)
     {
         var foundFile = false;
-        string foundFilename = "";
+        var foundFilename = "";
         while (!foundFile)
         {
-            Console.WriteLine(value: "Enter file name (.dat or .bin): ");
+            Console.WriteLine(value: "\nExisting files: ");
             foundFile = FileHelpers.FoundFileInLatticeLengthFolder(
                 latticeLengthToMatchFolderName,
                 out var foundFilenameCandidate);

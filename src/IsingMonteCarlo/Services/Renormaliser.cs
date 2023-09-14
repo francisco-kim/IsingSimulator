@@ -8,82 +8,151 @@ public static class Renormaliser
     private static readonly int RenormalisationSize = 3;
 
     public static void GenerateRenormalisedLatticeSpinConfigurationImages(
-        NearestNeighbourNDIsingLattice<int> initialLattice,
+        IEnumerable<int> initialSpinConfiguration,
         int finalLatticeSizeLimit,
         double temperature = double.NaN,
         bool resize = true)
     {
-        var startingLattice = initialLattice;
-        while (startingLattice.LatticeLength >= finalLatticeSizeLimit)
+        var startingLattice = initialSpinConfiguration.ToList()
+                           ?? throw new ArgumentNullException(nameof(initialSpinConfiguration));
+        GenerateLatticeSpinConfigurationImage(
+            startingLattice,
+            temperature,
+            "renormalisation",
+            resize);
+
+        var latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
+        while (latticeLength >= finalLatticeSizeLimit)
         {
-            startingLattice = GenerateRenormalisedLattice(initialLattice, finalLatticeSizeLimit);
-            GenerateRenormalisedLatticeSpinConfigurationImage(
+            startingLattice = GenerateRenormalisedLattice(startingLattice, finalLatticeSizeLimit);
+            latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
+            GenerateLatticeSpinConfigurationImage(
                 startingLattice,
                 temperature,
+                "renormalisation",
                 resize);
         }
     }
 
-    public static void GenerateRenormalisedLatticeSpinConfigurationImage(
-        NearestNeighbourNDIsingLattice<int> lattice,
-        double temperature,
+    public static void GenerateZoomedLatticeSpinConfigurationImages(
+        IEnumerable<int> initialSpinConfiguration,
+        int finalLatticeSizeLimit,
+        double temperature = double.NaN,
         bool resize = true)
     {
-        var initialSpinConfiguration = lattice.Spins;
-        var latticeLength = lattice.LatticeLength;
+        var startingLattice = initialSpinConfiguration.ToList()
+                           ?? throw new ArgumentNullException(nameof(initialSpinConfiguration));
 
-        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(initialSpinConfiguration);
+        GenerateLatticeSpinConfigurationImage(
+            startingLattice,
+            temperature,
+            "zoom",
+            resize);
 
-        DrawHelpers.SaveBitmapAsPNG(
+        var latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
+        while (latticeLength >= finalLatticeSizeLimit && latticeLength % 3 == 0)
+        {
+            startingLattice = GenerateZoomedLattice(startingLattice, finalLatticeSizeLimit);
+            latticeLength = Convert.ToInt32(Math.Sqrt(startingLattice.Count));
+            GenerateLatticeSpinConfigurationImage(
+                startingLattice,
+                temperature,
+                "zoom",
+                resize);
+        }
+    }
+
+    public static void GenerateLatticeSpinConfigurationImage(
+        IEnumerable<int> initialSpinConfiguration,
+        double temperature,
+        string folderName,
+        bool resize = true)
+    {
+        var latticeSpinConfiguration = initialSpinConfiguration.ToList()
+                                    ?? throw new ArgumentNullException(nameof(initialSpinConfiguration));
+        var latticeLength = Convert.ToInt32(Math.Sqrt(latticeSpinConfiguration.Count));
+
+        var bitmap = DrawHelpers.GenerateGrayBitmapFrom2DList(latticeSpinConfiguration);
+
+        DrawHelpers.SaveBitmapAsPNGInSpecifiedFolder(
             bitmap,
             latticeLength,
+            folderName,
             temperature,
             resize);
     }
 
-    public static NearestNeighbourNDIsingLattice<int> GenerateRenormalisedLattice(
-        NearestNeighbourNDIsingLattice<int> initialLattice,
+    public static List<int> GenerateRenormalisedLattice(
+        IEnumerable<int> initialSpinConfiguration,
         int finalLatticeSizeLimit) =>
-        PerformOneRenormalisationStepWithMajorityRule(initialLattice);
+        PerformOneRenormalisationStepWithMajorityRule(
+            Fast2DIsingMonteCarloSimulator.Get2DArrayFrom1DArray(initialSpinConfiguration));
 
-    public static List<int> GenerateRenormalisedLatticeSpinConfigurationSpins(
-        NearestNeighbourNDIsingLattice<int> initialLattice,
+    public static List<int> GenerateZoomedLattice(
+        IEnumerable<int> initialSpinConfiguration,
         int finalLatticeSizeLimit) =>
-        PerformOneRenormalisationStepWithMajorityRule(initialLattice).Spins;
+        PerformZoom(Fast2DIsingMonteCarloSimulator.Get2DArrayFrom1DArray(initialSpinConfiguration));
 
-    private static NearestNeighbourNDIsingLattice<int> PerformOneRenormalisationStepWithMajorityRule(
-        NearestNeighbourNDIsingLattice<int> initialLattice)
+    private static List<int> PerformOneRenormalisationStepWithMajorityRule(
+        int[][] initialLattice)
     {
-        var initialLatticeLength = initialLattice.LatticeLength;
+        var initialLatticeLength = initialLattice.Length;
+
         if (initialLatticeLength % 3 is not 0)
         {
             throw new ArgumentException(nameof(initialLattice));
         }
 
-        var initialLatticeConfiguration = initialLattice.Spins;
+        //initialLattice = null;
+        //GC.Collect();
+        //GC.WaitForPendingFinalizers();
 
         var finalLatticeLength = initialLatticeLength / 3;
         var finalLatticeSize = finalLatticeLength * finalLatticeLength;
         var finalLatticeConfiguration = new List<int>(finalLatticeSize);
 
-        for (var i = 0; i < finalLatticeSize; ++i)
+        for (var i = 0; i < finalLatticeSize; i++)
         {
             var majorityRuleSpinSum = 0;
-            var kernelReferenceCoordinate = initialLattice.SpinIndexToSpatialPosition(i * RenormalisationSize);
-            for (var x = 0; x < RenormalisationSize; ++x)
+            var (quotient, kernelReferenceCoordinateX) = Math.DivRem(i * RenormalisationSize, initialLatticeLength);
+            var kernelReferenceCoordinateY = quotient * RenormalisationSize;
+            for (var x = 0; x < RenormalisationSize; x++)
             {
-                for (var y = 0; y < RenormalisationSize; ++y)
+                for (var y = 0; y < RenormalisationSize; y++)
                 {
-                    var spinIndexInKernel = initialLattice.SpatialPositionToSpinIndex(
-                        new[] { x + kernelReferenceCoordinate[0], y + kernelReferenceCoordinate[1] });
-                    majorityRuleSpinSum += initialLatticeConfiguration[spinIndexInKernel];
+                    majorityRuleSpinSum +=
+                        initialLattice[x + kernelReferenceCoordinateX][y + kernelReferenceCoordinateY];
                 }
             }
 
             var majorityRuleSpin = majorityRuleSpinSum > 0 ? 1 : -1;
-            finalLatticeConfiguration.Add(majorityRuleSpinSum > 0 ? 1 : -1);
+            finalLatticeConfiguration.Add(majorityRuleSpin);
         }
 
-        return new NearestNeighbourNDIsingLattice<int>(dimension: 2, finalLatticeLength, finalLatticeConfiguration);
+        return finalLatticeConfiguration;
+    }
+
+    private static List<int> PerformZoom(
+        int[][] initialLattice)
+    {
+        var initialLatticeLength = initialLattice.Length;
+
+        //initialLattice = null;
+        //GC.Collect();
+        //GC.WaitForPendingFinalizers();
+
+        var finalLatticeLength = initialLatticeLength / 3 * 2;
+        var finalLatticeSize = finalLatticeLength * finalLatticeLength;
+        var finalLatticeConfiguration = new List<int>(finalLatticeSize);
+
+        for (var y = 0; y < finalLatticeLength; y++)
+        {
+            for (var x = 0; x < finalLatticeLength; x++)
+            {
+                finalLatticeConfiguration.Add(initialLattice[x][y]);
+            }
+        }
+
+        return finalLatticeConfiguration;
     }
 }
