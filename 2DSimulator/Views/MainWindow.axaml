@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:_2DSimulator.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:_2DSimulator.Views"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="600"
+        x:Class="_2DSimulator.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        CanResize="False"
+        Width="600"
+        Height="600"
+        Icon="/Assets/avalonia-logo.ico"
+        VerticalContentAlignment="Center"
+        Title="{Binding Title}">
+
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+	<Window.Styles>
+        <Style Selector="Rectangle.spinUp">
+            <Setter Property="Fill" Value="MediumPurple"></Setter>
+        </Style>
+		<!--
+        <Style Selector="Rectangle.down">
+            <Setter Property="Fill" Value="HotPink"></Setter>
+        </Style>
+        -->
+		<Style Selector="Rectangle">
+            <Setter Property="Fill" Value="Black"></Setter>
+        </Style>
+    </Window.Styles>
+
+    <StackPanel Spacing="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10">
+        <Border BorderThickness="2" 
+                BorderBrush="White"
+                Background="Black"
+                CornerRadius="3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Height="500">
+            <UniformGrid Name="Grid"
+                         Columns="{Binding LatticeLength, Mode=OneTime}"
+                         Rows="{Binding LatticeLength, Mode=OneTime}"
+                         VerticalAlignment="Stretch"
+                         HorizontalAlignment="Stretch">
+                <UniformGrid.DataTemplates>
+                    <DataTemplate x:DataType="vm:Spin">
+                        <Rectangle 
+                            VerticalAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            Stretch="Fill"
+                            Width="" Height="10"
+                            Classes.spinUp="{Binding IsSpinUp, Mode=OneWay}" />
+                    </DataTemplate>
+                </UniformGrid.DataTemplates>
+            </UniformGrid>
+        </Border>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5" Margin="5">
+            <Button Content="{Binding ToggleText}" Command="{Binding ToggleRunCommand}" />
+            <Button Content="◎ Randomize" Command="{Binding RandomizeCommand}" />
+        </StackPanel>
+    </StackPanel>
+
+</Window>

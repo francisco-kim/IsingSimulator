@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IsingSimulator", "src\Ising
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IsingMonteCarlo", "src\IsingMonteCarlo\IsingMonteCarlo.csproj", "{D5DBEDF0-7896-428D-898E-F9502541823D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2DSimulator", "2DSimulator\2DSimulator.csproj", "{194691DB-2369-4986-B188-D27A73241EC1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2DSimulator.Desktop", "2DSimulator.Desktop\2DSimulator.Desktop.csproj", "{58B2FC9A-75C3-4AB5-8A6D-DD2B42B5B93F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{D5DBEDF0-7896-428D-898E-F9502541823D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5DBEDF0-7896-428D-898E-F9502541823D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5DBEDF0-7896-428D-898E-F9502541823D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{194691DB-2369-4986-B188-D27A73241EC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{194691DB-2369-4986-B188-D27A73241EC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{194691DB-2369-4986-B188-D27A73241EC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{194691DB-2369-4986-B188-D27A73241EC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58B2FC9A-75C3-4AB5-8A6D-DD2B42B5B93F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58B2FC9A-75C3-4AB5-8A6D-DD2B42B5B93F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58B2FC9A-75C3-4AB5-8A6D-DD2B42B5B93F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58B2FC9A-75C3-4AB5-8A6D-DD2B42B5B93F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
