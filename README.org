@@ -1,3 +1,0 @@
-* IsingSimulator
-
-Ising model simulator in N dimensions.
