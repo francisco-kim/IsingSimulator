@@ -27,6 +27,71 @@ export function renderFrame(id, view) {
   state.ctx.putImageData(state.imageData, 0, 0);
 }
 
+// --- vector-field arrow overlay (XY model) ---
+
+const arrowCanvases = new Map();
+
+export function initArrowCanvas(id, size) {
+  const canvas = document.getElementById(id);
+  if (!canvas) {
+    return;
+  }
+  canvas.width = size;
+  canvas.height = size;
+  arrowCanvases.set(id, canvas.getContext('2d'));
+}
+
+export function clearArrows(id) {
+  const ctx = arrowCanvases.get(id);
+  if (ctx) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+}
+
+// angles is a MemoryView of gridSize*gridSize doubles (row-major); each is a
+// representative spin direction for one cell of a coarse grid.
+export function drawArrows(id, angles, gridSize) {
+  const ctx = arrowCanvases.get(id);
+  if (!ctx) {
+    return;
+  }
+
+  // A MemoryView is not indexable; slice() copies it out to a Float64Array.
+  const theta = angles.slice();
+  const size = ctx.canvas.width;
+  const cell = size / gridSize;
+  const length = cell * 0.5;
+  const head = cell * 0.2;
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.strokeStyle = 'rgba(12, 12, 14, 0.55)';
+  ctx.lineWidth = Math.max(1, cell * 0.05);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+
+  for (let gy = 0; gy < gridSize; gy++) {
+    for (let gx = 0; gx < gridSize; gx++) {
+      const angle0 = theta[gy * gridSize + gx];
+      const cx = (gx + 0.5) * cell;
+      const cy = (gy + 0.5) * cell;
+      const dx = Math.cos(angle0) * length;
+      const dy = Math.sin(angle0) * length;
+      const tipX = cx + dx / 2;
+      const tipY = cy + dy / 2;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.moveTo(cx - dx / 2, cy - dy / 2);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(tipX - head * Math.cos(angle - 0.5), tipY - head * Math.sin(angle - 0.5));
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(tipX - head * Math.cos(angle + 0.5), tipY - head * Math.sin(angle + 0.5));
+    }
+  }
+
+  ctx.stroke();
+}
+
 let running = false;
 
 export function startLoop(dotNetRef) {

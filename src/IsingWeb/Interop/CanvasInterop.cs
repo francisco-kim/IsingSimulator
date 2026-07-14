@@ -25,6 +25,18 @@ public static partial class CanvasInterop
         string canvasId,
         [JSMarshalAs<JSType.MemoryView>] Span<byte> rgba);
 
+    [JSImport("initArrowCanvas", ModuleName)]
+    public static partial void InitArrowCanvas(string canvasId, int size);
+
+    [JSImport("clearArrows", ModuleName)]
+    public static partial void ClearArrows(string canvasId);
+
+    [JSImport("drawArrows", ModuleName)]
+    public static partial void DrawArrows(
+        string canvasId,
+        [JSMarshalAs<JSType.MemoryView>] Span<double> angles,
+        int gridSize);
+
     [JSImport("downloadCanvasPng", ModuleName)]
     public static partial void DownloadCanvasPng(string canvasId, string filename);
 

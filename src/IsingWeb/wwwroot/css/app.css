@@ -177,6 +177,20 @@ html, body {
     height: auto;
 }
 
+.canvas-stack {
+    position: relative;
+    line-height: 0;
+}
+
+.lattice-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
 .readout-row {
     display: flex;
     flex-wrap: wrap;

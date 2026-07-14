@@ -6,7 +6,10 @@
 
 <div class="sim-layout">
     <section class="lattice-panel">
-        <canvas id="xy-canvas" class="lattice-canvas"></canvas>
+        <div class="canvas-stack">
+            <canvas id="xy-canvas" class="lattice-canvas"></canvas>
+            <canvas id="xy-arrows" class="lattice-overlay"></canvas>
+        </div>
         <div class="readout-row">
             <div class="readout"><span class="readout-label">|m|</span><span class="readout-value">@_magnetisation.ToString("0.000")</span></div>
             <div class="readout"><span class="readout-label">E per spin</span><span class="readout-value">@_energyPerSite.ToString("0.000")</span></div>
@@ -69,8 +72,12 @@
 
         <div class="control-group">
             <label class="check-label">
-                <input type="checkbox" @bind="_showVortices" />
+                <input type="checkbox" @bind="_showVortices" @bind:after="RenderLattice" />
                 mark vortices ○ / antivortices ●
+            </label>
+            <label class="check-label">
+                <input type="checkbox" @bind="_showArrows" @bind:after="OnToggleArrows" />
+                spin-direction arrow overlay
             </label>
         </div>
 
@@ -118,7 +125,10 @@
 
 @code {
     private const int SeriesCapacity = 400;
+    private const int ArrowGrid = 24;
+    private const int ArrowCanvasSize = 512;
 
+    private readonly double[] _arrowAngles = new double[ArrowGrid * ArrowGrid];
     private readonly LatticeRenderer _renderer = new();
     private readonly List<int> _vortexSites = new();
     private readonly List<int> _antivortexSites = new();
@@ -135,6 +145,7 @@
     private bool _running;
     private bool _hotStart = true;
     private bool _showVortices = true;
+    private bool _showArrows;
     private int _latticeLength = 128;
     private int _sweepsPerFrame = 4;
     private double _temperature = 0.85;
@@ -163,10 +174,23 @@
         _interopReady = true;
 
         Interop.CanvasInterop.InitCanvas("xy-canvas", _latticeLength, _latticeLength);
+        Interop.CanvasInterop.InitArrowCanvas("xy-arrows", ArrowCanvasSize);
         UpdateObservables();
         RenderLattice();
         await JS.InvokeVoidAsync("renderKatex");
         StateHasChanged();
+    }
+
+    private void OnToggleArrows()
+    {
+        if (_showArrows)
+        {
+            RenderLattice();
+        }
+        else if (_interopReady)
+        {
+            Interop.CanvasInterop.ClearArrows("xy-arrows");
+        }
     }
 
     [JSInvokable]
@@ -296,6 +320,47 @@
         }
 
         Interop.CanvasInterop.RenderFrame("xy-canvas", _renderer.Buffer);
+
+        if (_showArrows)
+        {
+            ComputeArrowField();
+            Interop.CanvasInterop.DrawArrows("xy-arrows", _arrowAngles, ArrowGrid);
+        }
+    }
+
+    // Vector-averages the spins over each coarse cell into a representative
+    // direction, so the overlay shows the smooth field (and the pinwheel of a
+    // vortex) rather than the per-site thermal flicker.
+    private void ComputeArrowField()
+    {
+        var length = _latticeLength;
+        var angles = _simulator.Angles;
+
+        for (var gy = 0; gy < ArrowGrid; gy++)
+        {
+            var yStart = gy * length / ArrowGrid;
+            var yEnd = (gy + 1) * length / ArrowGrid;
+
+            for (var gx = 0; gx < ArrowGrid; gx++)
+            {
+                var xStart = gx * length / ArrowGrid;
+                var xEnd = (gx + 1) * length / ArrowGrid;
+
+                var sumCos = 0.0;
+                var sumSin = 0.0;
+                for (var y = yStart; y < yEnd; y++)
+                {
+                    for (var x = xStart; x < xEnd; x++)
+                    {
+                        var theta = angles[x + y * length];
+                        sumCos += Math.Cos(theta);
+                        sumSin += Math.Sin(theta);
+                    }
+                }
+
+                _arrowAngles[gx + gy * ArrowGrid] = Math.Atan2(sumSin, sumCos);
+            }
+        }
     }
 
     private void SampleSeries()
