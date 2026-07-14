@@ -336,9 +336,12 @@
         _renderer.RenderPhases(_simulator.Angles);
         if (_showVortices)
         {
-            // Crosses when sparse (the interesting near-KT regime); single
-            // pixels when the vortex plasma would otherwise blot out the field.
-            var drawCross = _vortexCount + _antivortexCount < 300;
+            // Crosses through the whole near-KT regime (including just above the
+            // transition, where the count fluctuates a lot); fall back to single
+            // pixels only once the vortex plasma would truly blot out the field.
+            // Density-based so the switch happens at the same visual coverage on
+            // every lattice size (~6% of plaquettes carrying a cross).
+            var drawCross = _vortexCount + _antivortexCount < 0.06 * _latticeLength * _latticeLength;
             _renderer.MarkPlaquettes(_vortexSites, _latticeLength, white: true, drawCross);
             _renderer.MarkPlaquettes(_antivortexSites, _latticeLength, white: false, drawCross);
         }
