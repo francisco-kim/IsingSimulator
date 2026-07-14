@@ -73,6 +73,19 @@ html, body {
     font-size: 1.05rem;
 }
 
+.app-byline {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.82rem;
+    margin-left: 0.4rem;
+    text-decoration: none;
+}
+
+.app-byline:hover {
+    text-decoration: underline;
+    color: var(--text-secondary);
+}
+
 .app-mark {
     width: 18px;
     height: 18px;
