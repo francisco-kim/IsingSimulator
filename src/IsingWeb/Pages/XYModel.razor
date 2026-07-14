@@ -63,7 +63,8 @@
                     <option value="false">cold start</option>
                 </select>
                 <select value="@_sweepsPerFrame" @onchange="@(e => _sweepsPerFrame = double.Parse((string)e.Value!, System.Globalization.CultureInfo.InvariantCulture))">
-                    <option value="0.05">0.05 sweeps/frame (slowest)</option>
+                    <option value="0.02">0.02 sweeps/frame (slowest)</option>
+                    <option value="0.05">0.05 sweeps/frame</option>
                     <option value="0.1">0.1 sweeps/frame</option>
                     <option value="0.25">0.25 sweeps/frame</option>
                     <option value="0.5">0.5 sweeps/frame</option>
