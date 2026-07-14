@@ -48,45 +48,43 @@ export function clearArrows(id) {
   }
 }
 
-// angles is a MemoryView of gridSize*gridSize doubles (row-major); each is a
-// representative spin direction for one cell of a coarse grid.
-export function drawArrows(id, angles, gridSize) {
+// arrows is a MemoryView of count*3 doubles: (xPixel, yPixel, theta) per arrow.
+// One arrow per lattice site, drawn only in the neighbourhood of vortices, so
+// the per-site winding is resolved rather than averaged away.
+export function drawVortexArrows(id, arrows, count, cellPixels) {
   const ctx = arrowCanvases.get(id);
   if (!ctx) {
     return;
   }
 
   // A MemoryView is not indexable; slice() copies it out to a Float64Array.
-  const theta = angles.slice();
+  const data = arrows.slice();
   const size = ctx.canvas.width;
-  const cell = size / gridSize;
-  const length = cell * 0.5;
-  const head = cell * 0.2;
+  const length = cellPixels * 1.15;
+  const head = cellPixels * 0.5;
 
   ctx.clearRect(0, 0, size, size);
-  ctx.strokeStyle = 'rgba(12, 12, 14, 0.55)';
-  ctx.lineWidth = Math.max(1, cell * 0.05);
+  ctx.strokeStyle = 'rgba(10, 10, 12, 0.72)';
+  ctx.lineWidth = Math.max(1, cellPixels * 0.11);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
 
-  for (let gy = 0; gy < gridSize; gy++) {
-    for (let gx = 0; gx < gridSize; gx++) {
-      const angle0 = theta[gy * gridSize + gx];
-      const cx = (gx + 0.5) * cell;
-      const cy = (gy + 0.5) * cell;
-      const dx = Math.cos(angle0) * length;
-      const dy = Math.sin(angle0) * length;
-      const tipX = cx + dx / 2;
-      const tipY = cy + dy / 2;
-      const angle = Math.atan2(dy, dx);
+  for (let i = 0; i < count; i++) {
+    const cx = data[i * 3];
+    const cy = data[i * 3 + 1];
+    const theta = data[i * 3 + 2];
+    const dx = Math.cos(theta) * length;
+    const dy = Math.sin(theta) * length;
+    const tipX = cx + dx / 2;
+    const tipY = cy + dy / 2;
+    const angle = Math.atan2(dy, dx);
 
-      ctx.moveTo(cx - dx / 2, cy - dy / 2);
-      ctx.lineTo(tipX, tipY);
-      ctx.lineTo(tipX - head * Math.cos(angle - 0.5), tipY - head * Math.sin(angle - 0.5));
-      ctx.moveTo(tipX, tipY);
-      ctx.lineTo(tipX - head * Math.cos(angle + 0.5), tipY - head * Math.sin(angle + 0.5));
-    }
+    ctx.moveTo(cx - dx / 2, cy - dy / 2);
+    ctx.lineTo(tipX, tipY);
+    ctx.lineTo(tipX - head * Math.cos(angle - 0.5), tipY - head * Math.sin(angle - 0.5));
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - head * Math.cos(angle + 0.5), tipY - head * Math.sin(angle + 0.5));
   }
 
   ctx.stroke();

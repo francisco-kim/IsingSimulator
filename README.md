@@ -1,7 +1,7 @@
 # Ising Simulator
 
-Monte Carlo simulation of the Ising model in 1D and 2D, with an interactive
-web app that runs entirely in the browser.
+Monte Carlo simulation of the Ising model in 1D and 2D (plus the 2D XY
+model), with an interactive web app that runs entirely in the browser.
 
 **Live demo: <https://francisco-kim.github.io/IsingSimulator/>**
 
@@ -27,9 +27,14 @@ In 2D the model has the exactly known critical point (Onsager, 1944):
 - **T꜀ = 2 / ln(1 + √2) ≈ 2.2692** (in units of |J|/k_B),
 - spontaneous magnetisation **M(T) = (1 − sinh(2/T)⁻⁴)^(1/8)** for T < T꜀,
 
-both of which are drawn as exact references in the web app's sweep page.
+both of which are drawn as exact references on the web app's Observables page.
 In 1D there is no finite-temperature transition (T꜀ = 0); the exact energy
 per spin, E/N = −tanh(1/T), is easy to check against the simulator.
+
+The web app also includes the 2D **XY model** (planar spins,
+H = −J Σ cos(θᵢ − θⱼ)). By the Mermin–Wagner theorem it cannot magnetise at
+any T > 0, but it undergoes the topological **Berezinskii–Kosterlitz–Thouless
+transition** at T_KT ≈ 0.893 J, where bound vortex–antivortex pairs unbind.
 
 ### Monte Carlo algorithms
 
@@ -100,11 +105,15 @@ browser. Pages:
   Metropolis/Glauber/Wolff switch with optional Wolff-cluster highlighting;
   domain colouring; live M(t) and E(t) charts; PNG export.
   Append `?autorun` to the URL to start the simulation on load.
-- **Temperature sweep** — ⟨|M|⟩, χ, C, ⟨E⟩ and ξ/L across the critical
+- **Observables** — ⟨|M|⟩, χ, C, ⟨E⟩ and ξ/L across the critical
   region with error bars, the exact M(T) overlay and the T꜀ marker; CSV export.
 - **Hysteresis** — triangle-wave field drive below T꜀ tracing the M–h loop.
 - **Renormalisation** — repeated 3×3 majority-rule block-spin steps at,
   below and above T꜀ (scale invariance at criticality).
+- **XY model** — 2D XY model with phase-hue colouring, live vortex and
+  antivortex counters, and four preset temperatures spanning the KT
+  transition; an optional overlay draws per-site spin arrows around each
+  vortex core (off by default) so the phase winding is visible.
 
 ### Console app
 

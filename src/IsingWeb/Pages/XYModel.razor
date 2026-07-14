@@ -77,7 +77,7 @@
             </label>
             <label class="check-label">
                 <input type="checkbox" @bind="_showArrows" @bind:after="OnToggleArrows" />
-                spin-direction arrow overlay
+                spin arrows around vortices
             </label>
         </div>
 
@@ -125,10 +125,14 @@
 
 @code {
     private const int SeriesCapacity = 400;
-    private const int ArrowGrid = 24;
-    private const int ArrowCanvasSize = 512;
+    private const int ArrowCanvasSize = 1024;
+    private const int VortexArrowRadius = 6;
+    private const int MaxVortexArrows = 8000;
 
-    private readonly double[] _arrowAngles = new double[ArrowGrid * ArrowGrid];
+    // Interleaved (xPixel, yPixel, theta) per arrow, filled each frame.
+    private readonly double[] _vortexArrowData = new double[MaxVortexArrows * 3];
+    private readonly HashSet<int> _arrowSitesSeen = new();
+    private int _vortexArrowCount;
     private readonly LatticeRenderer _renderer = new();
     private readonly List<int> _vortexSites = new();
     private readonly List<int> _antivortexSites = new();
@@ -321,44 +325,73 @@
 
         Interop.CanvasInterop.RenderFrame("xy-canvas", _renderer.Buffer);
 
-        if (_showArrows)
+        if (!_showArrows)
         {
-            ComputeArrowField();
-            Interop.CanvasInterop.DrawArrows("xy-arrows", _arrowAngles, ArrowGrid);
+            return;
+        }
+
+        ComputeVortexArrowField();
+        if (_vortexArrowCount > 0)
+        {
+            Interop.CanvasInterop.DrawVortexArrows(
+                "xy-arrows",
+                _vortexArrowData.AsSpan(0, _vortexArrowCount * 3),
+                _vortexArrowCount,
+                (double)ArrowCanvasSize / _latticeLength);
+        }
+        else
+        {
+            Interop.CanvasInterop.ClearArrows("xy-arrows");
         }
     }
 
-    // Vector-averages the spins over each coarse cell into a representative
-    // direction, so the overlay shows the smooth field (and the pinwheel of a
-    // vortex) rather than the per-site thermal flicker.
-    private void ComputeArrowField()
+    // One raw (unaveraged) arrow per site in a window around each vortex and
+    // antivortex core, so the phase winding around the core stays visible
+    // instead of being smoothed away.
+    private void ComputeVortexArrowField()
     {
         var length = _latticeLength;
         var angles = _simulator.Angles;
+        var cellPixels = (double)ArrowCanvasSize / length;
 
-        for (var gy = 0; gy < ArrowGrid; gy++)
+        _arrowSitesSeen.Clear();
+        _vortexArrowCount = 0;
+
+        AddWindowsAround(_vortexSites);
+        AddWindowsAround(_antivortexSites);
+
+        void AddWindowsAround(IReadOnlyList<int> cores)
         {
-            var yStart = gy * length / ArrowGrid;
-            var yEnd = (gy + 1) * length / ArrowGrid;
-
-            for (var gx = 0; gx < ArrowGrid; gx++)
+            foreach (var core in cores)
             {
-                var xStart = gx * length / ArrowGrid;
-                var xEnd = (gx + 1) * length / ArrowGrid;
+                var coreX = core % length;
+                var coreY = core / length;
 
-                var sumCos = 0.0;
-                var sumSin = 0.0;
-                for (var y = yStart; y < yEnd; y++)
+                for (var dy = -VortexArrowRadius; dy <= VortexArrowRadius; dy++)
                 {
-                    for (var x = xStart; x < xEnd; x++)
+                    for (var dx = -VortexArrowRadius; dx <= VortexArrowRadius; dx++)
                     {
-                        var theta = angles[x + y * length];
-                        sumCos += Math.Cos(theta);
-                        sumSin += Math.Sin(theta);
+                        if (_vortexArrowCount >= MaxVortexArrows)
+                        {
+                            return;
+                        }
+
+                        var x = ((coreX + dx) % length + length) % length;
+                        var y = ((coreY + dy) % length + length) % length;
+                        var site = x + y * length;
+
+                        if (!_arrowSitesSeen.Add(site))
+                        {
+                            continue;
+                        }
+
+                        var index = _vortexArrowCount * 3;
+                        _vortexArrowData[index] = (x + 0.5) * cellPixels;
+                        _vortexArrowData[index + 1] = (y + 0.5) * cellPixels;
+                        _vortexArrowData[index + 2] = angles[site];
+                        _vortexArrowCount++;
                     }
                 }
-
-                _arrowAngles[gx + gy * ArrowGrid] = Math.Atan2(sumSin, sumCos);
             }
         }
     }

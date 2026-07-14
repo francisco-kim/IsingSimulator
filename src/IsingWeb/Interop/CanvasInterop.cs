@@ -31,11 +31,12 @@ public static partial class CanvasInterop
     [JSImport("clearArrows", ModuleName)]
     public static partial void ClearArrows(string canvasId);
 
-    [JSImport("drawArrows", ModuleName)]
-    public static partial void DrawArrows(
+    [JSImport("drawVortexArrows", ModuleName)]
+    public static partial void DrawVortexArrows(
         string canvasId,
-        [JSMarshalAs<JSType.MemoryView>] Span<double> angles,
-        int gridSize);
+        [JSMarshalAs<JSType.MemoryView>] Span<double> arrows,
+        int count,
+        double cellPixels);
 
     [JSImport("downloadCanvasPng", ModuleName)]
     public static partial void DownloadCanvasPng(string canvasId, string filename);
