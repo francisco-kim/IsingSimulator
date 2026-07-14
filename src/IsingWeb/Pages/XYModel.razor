@@ -1,0 +1,332 @@
+@page "/xy"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>XY model — Kosterlitz–Thouless transition</PageTitle>
+
+<div class="sim-layout">
+    <section class="lattice-panel">
+        <canvas id="xy-canvas" class="lattice-canvas"></canvas>
+        <div class="readout-row">
+            <div class="readout"><span class="readout-label">|m|</span><span class="readout-value">@_magnetisation.ToString("0.000")</span></div>
+            <div class="readout"><span class="readout-label">E per spin</span><span class="readout-value">@_energyPerSite.ToString("0.000")</span></div>
+            <div class="readout"><span class="readout-label">vortices ○</span><span class="readout-value">@_vortexCount</span></div>
+            <div class="readout"><span class="readout-label">antivortices ●</span><span class="readout-value">@_antivortexCount</span></div>
+            <div class="readout"><span class="readout-label">sweeps</span><span class="readout-value">@_completedSweeps.ToString("0")</span></div>
+            <div class="readout"><span class="readout-label">sweeps/s</span><span class="readout-value">@_sweepsPerSecond.ToString("0.0")</span></div>
+        </div>
+    </section>
+
+    <aside class="controls">
+        <div class="control-group control-buttons">
+            <button class="btn btn-primary" @onclick="TogglePlay">@(_running ? "Pause" : "Run")</button>
+            <button class="btn" @onclick="StepOnce" disabled="@_running">Step</button>
+            <button class="btn" @onclick="ResetLattice">Reset</button>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Temperature T = @_temperature.ToString("0.000")</label>
+            <input type="range" min="0.05" max="2.5" step="0.005"
+                   value="@_temperature"
+                   @oninput="@(e => _temperature = double.Parse((string)e.Value!))" />
+            <div class="slider-scale"><span>0.05</span><span class="tc-tick" style="left:@KtSliderPercent%">▲ T<sub>KT</sub></span><span>2.5</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Explore the KT transition (T<sub>KT</sub> ≈ 0.893)</label>
+            <div class="inline-controls">
+                <button class="btn btn-mini" @onclick="() => _temperature = 0.4">0.40 — deep quasi-order</button>
+                <button class="btn btn-mini" @onclick="() => _temperature = 0.85">0.85 — just below</button>
+                <button class="btn btn-mini" @onclick="() => _temperature = 0.95">0.95 — just above</button>
+                <button class="btn btn-mini" @onclick="() => _temperature = 1.6">1.60 — hot</button>
+            </div>
+            <div class="control-hint">
+                Below T<sub>KT</sub>: few vortex–antivortex pairs, tightly bound. Above: pairs unbind and
+                free vortices proliferate.
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Lattice &amp; speed</label>
+            <div class="inline-controls">
+                <select value="@_latticeLength" @onchange="OnSizeChanged">
+                    <option value="64">64 × 64</option>
+                    <option value="128">128 × 128</option>
+                    <option value="256">256 × 256</option>
+                </select>
+                <select value="@(_hotStart ? "true" : "false")" @onchange="OnInitChanged"
+                        title="Hot start: random angles (T = ∞). Cold start: all spins aligned (T = 0).">
+                    <option value="true">hot start</option>
+                    <option value="false">cold start</option>
+                </select>
+                <select value="@_sweepsPerFrame" @onchange="@(e => _sweepsPerFrame = int.Parse((string)e.Value!))">
+                    <option value="1">1 sweep/frame</option>
+                    <option value="4">4 sweeps/frame</option>
+                    <option value="16">16 sweeps/frame</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="check-label">
+                <input type="checkbox" @bind="_showVortices" />
+                mark vortices ○ / antivortices ●
+            </label>
+        </div>
+
+        <div class="control-group">
+            <button class="btn" @onclick="ExportPng">Export PNG</button>
+        </div>
+    </aside>
+</div>
+
+<section class="charts-row">
+    <StripChart Title="Spin-vector modulus |m|(t)" XValues="@_sweepAxis" YValues="@_magnetisationSeries"
+                Stroke="var(--series-1)" FixedMin="0" FixedMax="1.05" />
+    <StripChart Title="Vortex count (t)" XValues="@_sweepAxis" YValues="@_vortexSeries"
+                Stroke="var(--series-8)" FixedMin="0" />
+</section>
+
+<section class="explainer">
+    <h2>What is being simulated?</h2>
+    <p>
+        The XY model replaces the Ising ±1 spins with planar unit vectors — an angle
+        <span data-katex="\theta_i \in [0, 2\pi)"></span> at every site, shown as hue. The energy is
+    </p>
+    <div data-katex="H \;=\; -J \sum_{\langle i,j \rangle} \cos(\theta_i - \theta_j) ," data-katex-display></div>
+    <p>
+        with <span data-katex="J > 0"></span> favouring aligned neighbours. Because the symmetry is now
+        continuous, the 2D model cannot magnetise at any <span data-katex="T > 0"></span>
+        (Mermin–Wagner theorem) — yet it still has a phase transition, of a subtler, topological kind:
+        the <strong>Berezinskii–Kosterlitz–Thouless (KT) transition</strong> at
+        <span data-katex="k_{\mathrm{B}} T_{\mathrm{KT}} \approx 0.893\, J"></span>.
+    </p>
+    <p>
+        The actors are <strong>vortices</strong> — points around which the phase winds by
+        <span data-katex="+2\pi"></span> (marked ○) — and <strong>antivortices</strong>
+        (winding <span data-katex="-2\pi"></span>, marked ●). Below
+        <span data-katex="T_{\mathrm{KT}}"></span> they occur only as rare, tightly bound
+        vortex–antivortex pairs, and spin correlations decay slowly, as power laws (quasi-long-range
+        order — the hue drifts smoothly across the lattice). Above
+        <span data-katex="T_{\mathrm{KT}}"></span> the pairs unbind: free vortices proliferate, scramble
+        the phase, and correlations collapse to exponential decay. Try the four preset temperatures and
+        watch the vortex counter: it stays near zero, then jumps by orders of magnitude across the
+        transition. On this periodic lattice the total winding must vanish, so the two counters always
+        balance — vortices are created and destroyed strictly in pairs.
+    </p>
+</section>
+
+@code {
+    private const int SeriesCapacity = 400;
+
+    private readonly LatticeRenderer _renderer = new();
+    private readonly List<int> _vortexSites = new();
+    private readonly List<int> _antivortexSites = new();
+    private readonly List<double> _sweepAxis = new();
+    private readonly List<double> _magnetisationSeries = new();
+    private readonly List<double> _vortexSeries = new();
+    private readonly System.Diagnostics.Stopwatch _uiRefresh = System.Diagnostics.Stopwatch.StartNew();
+    private readonly System.Diagnostics.Stopwatch _rateStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+    private XYModelSimulator _simulator = null!;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<XYModel>? _selfReference;
+    private bool _interopReady;
+    private bool _running;
+    private bool _hotStart = true;
+    private bool _showVortices = true;
+    private int _latticeLength = 128;
+    private int _sweepsPerFrame = 4;
+    private double _temperature = 0.85;
+    private double _completedSweeps;
+    private double _sweepsSinceRateSample;
+    private double _sweepsPerSecond;
+    private double _magnetisation;
+    private double _energyPerSite;
+    private int _vortexCount;
+    private int _antivortexCount;
+
+    private static double KtSliderPercent => (0.893 - 0.05) / (2.5 - 0.05) * 100.0;
+
+    protected override void OnInitialized() => InitialiseSimulator();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/isingCanvas.js");
+        _selfReference = DotNetObjectReference.Create(this);
+        _interopReady = true;
+
+        Interop.CanvasInterop.InitCanvas("xy-canvas", _latticeLength, _latticeLength);
+        UpdateObservables();
+        RenderLattice();
+        await JS.InvokeVoidAsync("renderKatex");
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnAnimationFrame()
+    {
+        _simulator.RunSteps((long)_sweepsPerFrame * _simulator.TotalSpinsCount, beta: 1.0 / _temperature);
+        _completedSweeps += _sweepsPerFrame;
+        _sweepsSinceRateSample += _sweepsPerFrame;
+
+        UpdateObservables();
+        RenderLattice();
+        SampleSeries();
+
+        if (_rateStopwatch.Elapsed.TotalSeconds > 0.5)
+        {
+            _sweepsPerSecond = _sweepsSinceRateSample / _rateStopwatch.Elapsed.TotalSeconds;
+            _sweepsSinceRateSample = 0;
+            _rateStopwatch.Restart();
+        }
+
+        if (_uiRefresh.ElapsedMilliseconds > 150)
+        {
+            _uiRefresh.Restart();
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void InitialiseSimulator()
+    {
+        _simulator = new XYModelSimulator(_latticeLength, _hotStart);
+        _completedSweeps = 0;
+        _sweepAxis.Clear();
+        _magnetisationSeries.Clear();
+        _vortexSeries.Clear();
+    }
+
+    private async Task TogglePlay()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        _running = !_running;
+        if (_running)
+        {
+            await _module.InvokeVoidAsync("startLoop", _selfReference);
+        }
+        else
+        {
+            await _module.InvokeVoidAsync("stopLoop");
+        }
+    }
+
+    private Task StepOnce()
+    {
+        _simulator.RunSteps(_simulator.TotalSpinsCount, beta: 1.0 / _temperature);
+        _completedSweeps += 1;
+        UpdateObservables();
+        RenderLattice();
+        SampleSeries();
+        return Task.CompletedTask;
+    }
+
+    private void ResetLattice()
+    {
+        InitialiseSimulator();
+        UpdateObservables();
+        RenderLattice();
+    }
+
+    private void OnSizeChanged(ChangeEventArgs e)
+    {
+        _latticeLength = int.Parse((string)e.Value!);
+        InitialiseSimulator();
+        if (_interopReady)
+        {
+            Interop.CanvasInterop.InitCanvas("xy-canvas", _latticeLength, _latticeLength);
+        }
+
+        UpdateObservables();
+        RenderLattice();
+    }
+
+    private void OnInitChanged(ChangeEventArgs e)
+    {
+        _hotStart = (string)e.Value! is "true";
+        InitialiseSimulator();
+        UpdateObservables();
+        RenderLattice();
+    }
+
+    private void ExportPng()
+    {
+        if (_interopReady)
+        {
+            Interop.CanvasInterop.DownloadCanvasPng(
+                "xy-canvas",
+                $"xy-L{_latticeLength}-T{_temperature:0.000}.png");
+        }
+    }
+
+    private void UpdateObservables()
+    {
+        _magnetisation = _simulator.GetMagnetisationMagnitude();
+        _energyPerSite = _simulator.GetEnergyPerSite();
+        (_vortexCount, _antivortexCount) = _simulator.LocateVortices(_vortexSites, _antivortexSites);
+    }
+
+    private void RenderLattice()
+    {
+        if (!_interopReady)
+        {
+            return;
+        }
+
+        _renderer.RenderPhases(_simulator.Angles);
+        if (_showVortices)
+        {
+            // Crosses when sparse (the interesting near-KT regime); single
+            // pixels when the vortex plasma would otherwise blot out the field.
+            var drawCross = _vortexCount + _antivortexCount < 300;
+            _renderer.MarkPlaquettes(_vortexSites, _latticeLength, white: true, drawCross);
+            _renderer.MarkPlaquettes(_antivortexSites, _latticeLength, white: false, drawCross);
+        }
+
+        Interop.CanvasInterop.RenderFrame("xy-canvas", _renderer.Buffer);
+    }
+
+    private void SampleSeries()
+    {
+        _sweepAxis.Add(_completedSweeps);
+        _magnetisationSeries.Add(_magnetisation);
+        _vortexSeries.Add(_vortexCount);
+
+        if (_sweepAxis.Count > SeriesCapacity)
+        {
+            _sweepAxis.RemoveAt(0);
+            _magnetisationSeries.RemoveAt(0);
+            _vortexSeries.RemoveAt(0);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _running = false;
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("stopLoop");
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _selfReference?.Dispose();
+    }
+}

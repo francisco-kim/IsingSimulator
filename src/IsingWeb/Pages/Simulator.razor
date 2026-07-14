@@ -118,6 +118,42 @@
                 Stroke="var(--series-2)" />
 </section>
 
+<section class="explainer">
+    <h2>What is being simulated?</h2>
+    <p>
+        Every site of the lattice carries a spin <span data-katex="s_i = \pm 1"></span>
+        (a black or white pixel). Neighbouring spins interact, and a configuration costs the energy
+    </p>
+    <div data-katex="E \;=\; -J \sum_{\langle i,j \rangle} s_i\, s_j ," data-katex-display></div>
+    <p>
+        where the sum runs over nearest-neighbour pairs and <span data-katex="J"></span> is the coupling
+        constant. Its sign decides the character of the low-temperature state. For
+        <span data-katex="J > 0"></span> aligned neighbours lower the energy, so the spins tend to point
+        the same way: a <strong>ferromagnet</strong>, with large uniform domains and a net magnetisation.
+        For <span data-katex="J < 0"></span> anti-alignment is favoured and the ordered state is a perfect
+        checkerboard: an <strong>antiferromagnet</strong>, ordered but with zero net magnetisation.
+        (This simulator runs the ferromagnetic case; on a square lattice the two are equivalent under
+        flipping every second spin, so the physics is the same.)
+    </p>
+    <p>
+        Temperature is the control knob. Configurations are sampled with the Boltzmann weight
+        <span data-katex="e^{-E/k_{\mathrm{B}}T}"></span>, so
+        <span data-katex="T"></span> sets the competition between energy, which favours order, and thermal
+        fluctuations (entropy), which favour disorder. In two dimensions this competition ends in a sharp
+        <strong>phase transition</strong> at the critical temperature
+    </p>
+    <div data-katex="k_{\mathrm{B}} T_c \;=\; \frac{2J}{\ln\!\left(1+\sqrt{2}\right)} \;\approx\; 2.269\, J"
+         data-katex-display></div>
+    <p>
+        (Onsager's exact result). Below <span data-katex="T_c"></span> a spontaneous magnetisation appears;
+        above it the lattice is a disordered paramagnet; exactly at <span data-katex="T_c"></span>
+        fluctuations occur on all length scales — drag the slider to the
+        <span data-katex="T_c"></span> mark and watch domains of every size flicker. In one dimension
+        there is no transition at any <span data-katex="T > 0"></span>: thermal excitations (domain walls)
+        cost only a finite energy and always proliferate.
+    </p>
+</section>
+
 @code {
     private const int SpacetimeRows = 360;
     private const double FrameBudgetMilliseconds = 10.0;
@@ -151,6 +187,7 @@
 
         ConfigureCanvas();
         RenderLattice();
+        await JS.InvokeVoidAsync("renderKatex");
 
         // ?autorun starts the simulation immediately (deep links, demos, tests).
         if (Runner.IsRunning || Navigation.Uri.Contains("autorun", StringComparison.OrdinalIgnoreCase))

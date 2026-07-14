@@ -7,6 +7,7 @@
     <title>Ising model simulator</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
+    <link rel="stylesheet" href="lib/katex/katex.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <script type="importmap"></script>
 </head>
@@ -25,6 +26,18 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <script src="lib/katex/katex.min.js"></script>
+    <script>
+        // Typesets every [data-katex] element; called by pages after render.
+        window.renderKatex = () => {
+            document.querySelectorAll('[data-katex]').forEach((el) => {
+                katex.render(el.getAttribute('data-katex'), el, {
+                    displayMode: el.hasAttribute('data-katex-display'),
+                    throwOnError: false
+                });
+            });
+        };
+    </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 

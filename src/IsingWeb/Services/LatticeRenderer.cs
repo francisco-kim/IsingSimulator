@@ -44,6 +44,53 @@ public sealed class LatticeRenderer
     }
 
     /// <summary>
+    ///     Renders planar spins coloured by their phase: hue = angle. Used by
+    ///     the XY model page.
+    /// </summary>
+    public void RenderPhases(IReadOnlyList<double> angles)
+    {
+        EnsurePixelCount(angles.Count);
+        for (var i = 0; i < angles.Count; i++)
+        {
+            var hue = angles[i] * (180.0 / Math.PI);
+            var (r, g, b) = HslToRgb(hue, saturation: 0.75, lightness: 0.55);
+            WritePixel(i, r, g, b);
+        }
+    }
+
+    /// <summary>
+    ///     Marks plaquettes (labelled by their lower-left site) with a 5-pixel
+    ///     cross — white for vortices, near-black for antivortices. Call after
+    ///     <see cref="RenderPhases" />.
+    /// </summary>
+    public void MarkPlaquettes(
+        IReadOnlyList<int> plaquetteSites,
+        int latticeLength,
+        bool white,
+        bool drawCross = true)
+    {
+        var height = _rgba.Length / 4 / latticeLength;
+        var (r, g, b) = white ? ((byte)255, (byte)255, (byte)255) : ((byte)10, (byte)10, (byte)10);
+
+        foreach (var site in plaquetteSites)
+        {
+            WritePixel(site, r, g, b);
+
+            if (!drawCross)
+            {
+                continue;
+            }
+
+            var x = site % latticeLength;
+            var y = site / latticeLength;
+            WritePixel((x + 1) % latticeLength + y * latticeLength, r, g, b);
+            WritePixel((x + latticeLength - 1) % latticeLength + y * latticeLength, r, g, b);
+            WritePixel(x + (y + 1) % height * latticeLength, r, g, b);
+            WritePixel(x + (y + height - 1) % height * latticeLength, r, g, b);
+        }
+    }
+
+    /// <summary>
     ///     Overlays the given sites (e.g. the currently growing Wolff cluster)
     ///     in the cluster accent colour. Call after <see cref="RenderSpins" />.
     /// </summary>
