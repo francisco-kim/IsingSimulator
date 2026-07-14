@@ -42,17 +42,42 @@
     </div>
 }
 
-<section class="rg-panels">
-    @foreach (var (length, index) in _panelSizes.Select((l, i) => (l, i)))
-    {
-        <figure class="rg-panel">
-            <canvas id="@($"rg-canvas-{index}")" class="lattice-canvas"></canvas>
-            <figcaption>@(index is 0 ? $"{length} × {length} (original)" : $"{length} × {length} — step {index}")</figcaption>
-        </figure>
-    }
-</section>
+@if (_panelSizes.Count == 0 && !_working)
+{
+    <p class="rg-example-note">
+        Example below: a 2187 × 2187 lattice at the critical temperature
+        <span data-katex="T_c \approx 2.269"></span>, coarse-grained step by step. At
+        <span data-katex="T_c"></span> the configuration is statistically self-similar — the panels
+        look alike at every scale. Press <em>Thermalise &amp; renormalise</em> above to run your own.
+    </p>
+    <section class="rg-panels">
+        @foreach (var (length, index) in ExampleSizes.Select((l, i) => (l, i)))
+        {
+            <figure class="rg-panel">
+                <img src="@($"images/rg-example/rg-{length}.png")" class="lattice-canvas"
+                     alt="@($"{length} by {length} block-spin lattice at the critical temperature")" />
+                <figcaption>@(index is 0 ? $"{length} × {length} (original)" : $"{length} × {length} — step {index}")</figcaption>
+            </figure>
+        }
+    </section>
+}
+else
+{
+    <section class="rg-panels">
+        @foreach (var (length, index) in _panelSizes.Select((l, i) => (l, i)))
+        {
+            <figure class="rg-panel">
+                <canvas id="@($"rg-canvas-{index}")" class="lattice-canvas"></canvas>
+                <figcaption>@(index is 0 ? $"{length} × {length} (original)" : $"{length} × {length} — step {index}")</figcaption>
+            </figure>
+        }
+    </section>
+}
 
 @code {
+    // Sizes of the pre-rendered example cascade in wwwroot/images/rg-example/.
+    private static readonly int[] ExampleSizes = { 2187, 729, 243, 81, 27, 9 };
+
     private readonly LatticeRenderer _renderer = new();
 
     private bool _interopReady;
@@ -69,6 +94,7 @@
         {
             await Interop.CanvasInterop.EnsureModuleLoadedAsync();
             _interopReady = true;
+            await JS.InvokeVoidAsync("renderKatex");
         }
     }
 

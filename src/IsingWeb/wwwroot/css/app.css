@@ -559,6 +559,13 @@ input[type="number"] {
     margin-top: 0.5rem;
 }
 
+.rg-example-note {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 62rem;
+    margin: 1.25rem 0 0;
+}
+
 /* ---------- loading & error UI ---------- */
 
 .app-loading {
