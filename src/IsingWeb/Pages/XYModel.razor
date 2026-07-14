@@ -62,7 +62,11 @@
                     <option value="true">hot start</option>
                     <option value="false">cold start</option>
                 </select>
-                <select value="@_sweepsPerFrame" @onchange="@(e => _sweepsPerFrame = int.Parse((string)e.Value!))">
+                <select value="@_sweepsPerFrame" @onchange="@(e => _sweepsPerFrame = double.Parse((string)e.Value!, System.Globalization.CultureInfo.InvariantCulture))">
+                    <option value="0.05">0.05 sweeps/frame (slowest)</option>
+                    <option value="0.1">0.1 sweeps/frame</option>
+                    <option value="0.25">0.25 sweeps/frame</option>
+                    <option value="0.5">0.5 sweeps/frame</option>
                     <option value="1">1 sweep/frame</option>
                     <option value="4">4 sweeps/frame</option>
                     <option value="16">16 sweeps/frame</option>
@@ -166,7 +170,7 @@
     private bool _showVortices = true;
     private bool _showArrows;
     private int _latticeLength = 128;
-    private int _sweepsPerFrame = 4;
+    private double _sweepsPerFrame = 4;
     private double _temperature = 0.85;
     private double _completedSweeps;
     private double _sweepsSinceRateSample;
@@ -215,7 +219,8 @@
     [JSInvokable]
     public Task OnAnimationFrame()
     {
-        _simulator.RunSteps((long)_sweepsPerFrame * _simulator.TotalSpinsCount, beta: 1.0 / _temperature);
+        var steps = Math.Max(1L, (long)(_sweepsPerFrame * _simulator.TotalSpinsCount));
+        _simulator.RunSteps(steps, beta: 1.0 / _temperature);
         _completedSweeps += _sweepsPerFrame;
         _sweepsSinceRateSample += _sweepsPerFrame;
 

@@ -21,6 +21,10 @@ public sealed class SimulationRunner
     private long _stepsSinceRateSample;
     private double _lastSampleSweep;
     private double _field;
+
+    // Fractional sweeps carried over between 1D frames so that speeds below
+    // one sweep per frame skip frames instead of flooring to one row.
+    private double _sweepCarry;
     private SpinUpdateMethod _method = SpinUpdateMethod.Metropolis;
 
     public SimulationRunner() => Configure(dimension: 2, latticeLength: 128, hotStart: true);
@@ -119,6 +123,7 @@ public sealed class SimulationRunner
         CompletedSweeps = 0.0;
         _lastSampleSweep = 0.0;
         _stepsSinceRateSample = 0;
+        _sweepCarry = 0.0;
         _sweepAxis.Clear();
         _magnetisationSeries.Clear();
         _energySeries.Clear();
@@ -143,14 +148,16 @@ public sealed class SimulationRunner
 
         if (Dimension is 1)
         {
-            // One spacetime row per completed sweep.
-            var rows = Math.Max(1, (int)Math.Round(SweepsPerFrame));
-            for (var row = 0; row < rows; row++)
+            // One spacetime row per completed sweep. Sub-1 rates accumulate in
+            // _sweepCarry so slow speeds draw a row only every few frames.
+            _sweepCarry += SweepsPerFrame;
+            while (_sweepCarry >= 1.0)
             {
                 Simulator.RunSteps(totalSpins, beta, FerromagneticJ, _field, _method);
                 CompletedSweeps += 1.0;
                 _stepsSinceRateSample += totalSpins;
                 SweepCompletedIn1D?.Invoke();
+                _sweepCarry -= 1.0;
 
                 if (stopwatch.Elapsed.TotalMilliseconds > budgetMilliseconds)
                 {
