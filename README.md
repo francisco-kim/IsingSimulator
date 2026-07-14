@@ -5,9 +5,9 @@ model), with an interactive web app that runs entirely in the browser.
 
 **Live demo: <https://francisco-kim.github.io/IsingSimulator/>**
 
-| Interactive simulator | Observables across the transition |
-|---|---|
-| ![Simulator page](docs/images/simulator-page.png) | ![Sweep page](docs/images/sweep-page.png) |
+| Interactive simulator | Observables across the transition | XY model & the KT transition |
+|---|---|---|
+| ![Simulator page](docs/images/simulator-page.png) | ![Observables page](docs/images/sweep-page.png) | ![XY model page](docs/images/xy-page.png) |
 
 ## The physics
 
