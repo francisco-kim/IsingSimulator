@@ -111,8 +111,23 @@
     <p>
         The actors are <strong>vortices</strong> — points around which the phase winds by
         <span data-katex="+2\pi"></span> (marked ○) — and <strong>antivortices</strong>
-        (winding <span data-katex="-2\pi"></span>, marked ●). Below
-        <span data-katex="T_{\mathrm{KT}}"></span> they occur only as rare, tightly bound
+        (winding <span data-katex="-2\pi"></span>, marked ●). The topological charge enclosed by a closed
+        loop <span data-katex="C"></span> is the winding of the phase around it,
+    </p>
+    <div data-katex="q \;=\; \frac{1}{2\pi} \oint_{C} \nabla\theta \cdot \mathrm{d}\boldsymbol{\ell} \;\in\; \mathbb{Z} ,"
+         data-katex-display></div>
+    <p>
+        which on the lattice becomes a sum over the four bonds of each elementary plaquette:
+    </p>
+    <div data-katex="q \;=\; \frac{1}{2\pi} \sum_{\langle i,j\rangle \,\in\, \square} \big[\, \theta_j - \theta_i \,\big]_{(-\pi,\,\pi]} \;\in\; \{-1,\, 0,\, +1\} ,"
+         data-katex-display></div>
+    <p>
+        where the four bonds <span data-katex="\langle i,j\rangle"></span> are traversed counterclockwise
+        around the plaquette and <span data-katex="[\,\cdot\,]_{(-\pi,\,\pi]}"></span> wraps each angle
+        difference into <span data-katex="(-\pi,\,\pi]"></span>; then
+        <span data-katex="q = +1"></span> marks a vortex, <span data-katex="q = -1"></span> an antivortex,
+        and <span data-katex="q = 0"></span> an ordinary point. Below
+        <span data-katex="T_{\mathrm{KT}}"></span> vortices occur only as rare, tightly bound
         vortex–antivortex pairs, and spin correlations decay slowly, as power laws (quasi-long-range
         order — the hue drifts smoothly across the lattice). Above
         <span data-katex="T_{\mathrm{KT}}"></span> the pairs unbind: free vortices proliferate, scramble
