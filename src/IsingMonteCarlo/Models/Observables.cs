@@ -6,6 +6,7 @@ public record class Observables(
     double MagnetisationAbsolute,
     double Energy,
     double Susceptibility,
+    double SpecificHeat,
     double CorrelationLengthX,
     double CorrelationLengthY,
     double RenormalisedCorrelationLength,
@@ -14,6 +15,7 @@ public record class Observables(
     double MagnetisationAbsoluteSigma,
     double EnergySigma,
     double SusceptibilitySigma,
+    double SpecificHeatSigma,
     double CorrelationLengthXSigma,
     double CorrelationLengthYSigma,
     double RenormalisedCorrelationLengthSigma,
@@ -24,4 +26,5 @@ public record class Observables(
     List<double> CorrelationLengthXList,
     List<double> CorrelationLengthYList,
     List<double> RenormalisedCorrelationLengthList,
-    List<double> SusceptibilityList);
+    List<double> SusceptibilityList,
+    List<double> SpecificHeatList);

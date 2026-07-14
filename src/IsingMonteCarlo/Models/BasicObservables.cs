@@ -9,6 +9,7 @@ public record class BasicObservables(
     double CorrelationLengthY,
     double RenormalisedCorrelationLength,
     double Susceptibility,
+    double SpecificHeat,
     List<double> MagnetisationList,
     List<double> MagnetisationSquaredList,
     List<double> MagnetisationAbsoluteList,

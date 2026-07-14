@@ -15,6 +15,14 @@ public interface IHamiltonian<T> where T : INumber<T>
         double h,
         double? jY = null);
 
+    /// <summary>
+    ///     Discards the incrementally maintained total energy so the next call
+    ///     to <see cref="GetTotalEnergy" /> recomputes it from the current spin
+    ///     configuration. Required after the couplings or the external field
+    ///     change, since the cached value was accumulated with the old values.
+    /// </summary>
+    void InvalidateTotalEnergy();
+
     void FlipSpin(int spinIndex);
 
     void FlipSpinWithPropertiesUpdate(

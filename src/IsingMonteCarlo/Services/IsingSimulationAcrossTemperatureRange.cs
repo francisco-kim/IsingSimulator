@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Transactions;
-
 using IsingMonteCarlo.Helpers;
 using IsingMonteCarlo.Models;
 
@@ -63,6 +60,7 @@ public sealed class IsingSimulationAcrossTemperatureRange
         var correlationLengthYList = new List<List<double>>();
         var renormalisedCorrelationLengthList = new List<List<double>>();
         var susceptibilityList = new List<List<double>>();
+        var specificHeatList = new List<List<double>>();
 
         foreach (var temperature in enumeratedTemperatures)
         {
@@ -161,6 +159,8 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 });
             susceptibilityList.Add(
                 new List<double>(3) { temperature, observables.Susceptibility, observables.SusceptibilitySigma });
+            specificHeatList.Add(
+                new List<double>(3) { temperature, observables.SpecificHeat, observables.SpecificHeatSigma });
         }
 
         void writeMeasurements(List<double> boltzmannTemperatures)
@@ -195,7 +195,9 @@ public sealed class IsingSimulationAcrossTemperatureRange
                 "xi = "
               + "{" + string.Join(", ", renormalisedCorrelationLengthList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
                 "chi = "
-              + "{" + string.Join(", ", susceptibilityList.Select(el => "{" + string.Join(", ", el) + "}")) + "};"
+              + "{" + string.Join(", ", susceptibilityList.Select(el => "{" + string.Join(", ", el) + "}")) + "};",
+                "c = "
+              + "{" + string.Join(", ", specificHeatList.Select(el => "{" + string.Join(", ", el) + "}")) + "};"
             }.Select(s => s.Replace("E", "10^"))
              .ToList();
 

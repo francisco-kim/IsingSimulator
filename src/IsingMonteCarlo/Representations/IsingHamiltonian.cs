@@ -35,15 +35,23 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
     {
         if (TotalEnergy is double.NaN)
         {
-            TotalEnergy = 0.5 * Enumerable.Range(0, _totalSpinsCount)
-                        .Select(i => GetEnergyOfSite(i, j, h, jY))
-                        .Sum();
+            // Each bond is counted twice when summing per-site bond energies,
+            // but the field term -h*s_i is counted once per site.
+            var bondEnergySum = 0.0;
+            for (var spinIndex = 0; spinIndex < _totalSpinsCount; spinIndex++)
+            {
+                bondEnergySum += GetBondEnergyOfSite(spinIndex, j, jY);
+            }
+
+            TotalEnergy = 0.5 * bondEnergySum - h * TotalMagnetisation;
         }
 
         return TotalEnergy;
     }
 
     public void FlipSpin(int spinIndex) => Lattice.Spins[spinIndex] *= -1;
+
+    public void InvalidateTotalEnergy() => TotalEnergy = double.NaN;
 
     public void FlipSpinWithPropertiesUpdate(
         int spinIndex,
@@ -70,7 +78,7 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
     public double GetAverageMagnetisation(
         double j,
         double h,
-        double? jY = null) => (double)GetTotalMagnetisation() / _totalSpinsCount;
+        double? jY = null) => TotalMagnetisation / _totalSpinsCount;
 
     public double GetDeltaEnergyOfSite(
         int spinIndex,
@@ -82,48 +90,40 @@ public sealed class IsingHamiltonian : IHamiltonian<int>
         int spinIndex,
         double j,
         double h,
-        double? jY = null)
+        double? jY = null) =>
+        GetBondEnergyOfSite(spinIndex, j, jY) - h * Lattice.Spins[spinIndex];
+
+    private double GetBondEnergyOfSite(
+        int spinIndex,
+        double j,
+        double? jY)
     {
-        if (jY is not null && _dimension != 2)
+        var spins = Lattice.Spins;
+        var neighbours = _neighboursIndices[spinIndex];
+        var spinValue = spins[spinIndex];
+
+        if (jY is null)
+        {
+            var neighbourSum = 0;
+            for (var i = 0; i < neighbours.Count; i++)
+            {
+                neighbourSum += spins[neighbours[i]];
+            }
+
+            return j * spinValue * neighbourSum;
+        }
+
+        if (_dimension != 2)
         {
             throw new ArgumentException(
                 "The coupling constant $J_{Y}$ is valid only in the 2D Ising model.",
                 nameof(jY));
         }
-        var spinValue = Lattice.Spins[spinIndex];
 
-        // Possible in 2D only
-        if (jY is not null && _dimension is 2)
-        {
-            var xBonds = j * _neighboursIndices[spinIndex].Take(2)
-                                                          .Select(
-                                                            neighbourIndex => 
-                                                                spinValue
-                                                                * Lattice.Spins[neighbourIndex])
-                                                          .Sum();
-            var yBonds = jY * _neighboursIndices[spinIndex].Skip(2).Take(2)
-                                                           .Select(
-                                                            neighbourIndex => 
-                                                                spinValue
-                                                                * Lattice.Spins[neighbourIndex])
-                                                            .Sum();
-            
-            return xBonds + (double)yBonds - h * spinValue;
-        }
+        // Neighbour ordering per site is [+x, -x, +y, -y].
+        var xBondsSum = spins[neighbours[0]] + spins[neighbours[1]];
+        var yBondsSum = spins[neighbours[2]] + spins[neighbours[3]];
 
-        return j * _neighboursIndices[spinIndex].Select(neighbourIndex => Lattice.Spins[neighbourIndex]
-                                                                          * spinValue)
-                                                .Sum()
-               - h * spinValue;
-    }
-
-    private double GetTotalMagnetisation()
-    {
-        if (TotalMagnetisation is int.MinValue)
-        {
-            TotalMagnetisation = Lattice.Spins.Sum();
-        }
-
-        return TotalMagnetisation;
+        return spinValue * (j * xBondsSum + (double)jY * yBondsSum);
     }
 }

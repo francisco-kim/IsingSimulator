@@ -18,14 +18,14 @@ public sealed class NearestNeighbourNDIsingLattice<T> where T : INumber<T>
         {
             throw new ArgumentOutOfRangeException(
                 nameof(dimension),
-                $"The dimension must be greater than 1, but {dimension} was given.");
+                $"The dimension must be at least 1, but {dimension} was given.");
         }
 
         if (latticeLength < LatticeSizeLowerBound)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(latticeLength),
-                $"The lattice length be greater than {LatticeSizeLowerBound}, but {latticeLength} was given.");
+                $"The lattice length must be at least {LatticeSizeLowerBound}, but {latticeLength} was given.");
         }
 
         TotalSpinsCount = Convert.ToInt32(Math.Pow(latticeLength, dimension));

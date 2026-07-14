@@ -5,6 +5,7 @@ public sealed class WolffClusterDynamics : ISpinDynamics
     private readonly IHamiltonian<int> _hamiltonian;
     private readonly int _totalSpinsCount;
     private readonly Queue<int> _clusterQueue;
+    private readonly List<int> _currentClusterSites;
     private readonly Random _random;
 
     private int _referenceSpin;
@@ -14,8 +15,20 @@ public sealed class WolffClusterDynamics : ISpinDynamics
         _hamiltonian = hamiltonian ?? throw new ArgumentNullException(nameof(hamiltonian));
         _totalSpinsCount = hamiltonian.Lattice.TotalSpinsCount;
         _clusterQueue = new Queue<int>();
+        _currentClusterSites = new List<int>();
         _random = randomSeed is not null ? new Random((int)randomSeed) : new Random();
     }
+
+    /// <summary>
+    ///     True while a cluster is still being grown, i.e. sites remain in the queue.
+    /// </summary>
+    public bool HasPendingCluster => _clusterQueue.Count > 0;
+
+    /// <summary>
+    ///     The sites flipped as part of the cluster currently being grown
+    ///     (cleared when a new cluster is seeded). Intended for visualisation.
+    /// </summary>
+    public IReadOnlyList<int> CurrentClusterSites => _currentClusterSites;
 
     public void FlipSpin(
         double beta,
@@ -27,7 +40,7 @@ public sealed class WolffClusterDynamics : ISpinDynamics
         {
             throw new ArgumentException(
                 "The Wolff single-cluster algorithm is not allowed "
-              + $"if the extrnal field is present ({nameof(h)} = {h} here).",
+              + $"if the external field is present ({nameof(h)} = {h} here).",
                 nameof(h));
         }
 
@@ -37,6 +50,8 @@ public sealed class WolffClusterDynamics : ISpinDynamics
             var chosenSite = _random.Next(minValue: 0, _totalSpinsCount);
             _referenceSpin = _hamiltonian.Lattice.Spins[chosenSite];
             _clusterQueue.Enqueue(chosenSite);
+            _currentClusterSites.Clear();
+            _currentClusterSites.Add(chosenSite);
 
             // Flip reference spin of the cluster
             _hamiltonian.FlipSpinWithPropertiesUpdate(chosenSite, j, h, jY);
@@ -58,6 +73,7 @@ public sealed class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
+                    _currentClusterSites.Add(neighbour);
                     _hamiltonian.FlipSpinWithPropertiesUpdate(neighbour, j, h, jY);
                 }
             }
@@ -79,6 +95,7 @@ public sealed class WolffClusterDynamics : ISpinDynamics
                 if (addToCluster)
                 {
                     _clusterQueue.Enqueue(neighbour);
+                    _currentClusterSites.Add(neighbour);
                     _hamiltonian.FlipSpinWithPropertiesUpdate(neighbour, j, h, jY);
                 }
             }

@@ -81,7 +81,7 @@ if (choice is 0 or 1 or 5 or 8)
 
 if (choice is 0 or 1 or 2 or 3 or 4)
 {
-    var stringUpdateMethodString = "* Spin-flip dynamics - Wolff (default) or (g)labuer: ";
+    var stringUpdateMethodString = "* Spin-flip dynamics - Wolff (default) or (g)lauber: ";
     Console.Write(stringUpdateMethodString);
     var spinUpdateMethodInput = Console.ReadLine();
     spinUpdateMethod = spinUpdateMethodInput is "g" ? SpinUpdateMethod.Glauber : SpinUpdateMethod.Wolff;

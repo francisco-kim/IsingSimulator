@@ -102,6 +102,7 @@ public sealed class IsingSimulationWithObservablesComputation
         List<double> magnetisationAbsoluteList = new();
         List<double> energyList = new();
         List<double> susceptibilityList = new();
+        List<double> specificHeatList = new();
         List<double> renormalisedCorrelationLengthList = new();
         List<double> correlationLengthXList = new();
         List<double> correlationLengthYList = new();
@@ -110,6 +111,10 @@ public sealed class IsingSimulationWithObservablesComputation
              measurementRepetition < measurementsRepetitionCountForChiXiVariance;
              measurementRepetition++)
         {
+            // Each repetition block must be statistically independent of the
+            // previous ones for the variance over blocks to be meaningful.
+            Simulation.ResetObservables();
+
             var basicObservables = Simulation.RunMonteCarloWithObservablesComputation(
                 _beta,
                 _j,
@@ -126,6 +131,7 @@ public sealed class IsingSimulationWithObservablesComputation
             energyList.AddRange(basicObservables.EnergyList);
 
             susceptibilityList.Add(basicObservables.Susceptibility);
+            specificHeatList.Add(basicObservables.SpecificHeat);
 
             if (!double.IsNaN(basicObservables.CorrelationLengthX))
             {
@@ -171,6 +177,9 @@ public sealed class IsingSimulationWithObservablesComputation
         var susceptibility = susceptibilityList.Sum() / susceptibilityList.Count;
         var susceptibilitySigma = Math.Sqrt(GetVariance(susceptibilityList, susceptibility));
 
+        var specificHeat = specificHeatList.Sum() / specificHeatList.Count;
+        var specificHeatSigma = Math.Sqrt(GetVariance(specificHeatList, specificHeat));
+
         var magnetisationString = $" M  = {magnetisation} +- {magnetisationSigma}";
         var magnetisationSquaredString = $"M^2 = {magnetisationSquared} +- {magnetisationSquaredSigma}";
         var magnetisationAbsoluteString = $"|M| = {magnetisationAbsolute} +- {magnetisationAbsoluteSigma}";
@@ -179,6 +188,7 @@ public sealed class IsingSimulationWithObservablesComputation
         var correlationLengthYString = $"XiY = {correlationLengthY} +- {correlationLengthYSigma}";
         var renormalisedCorrelationLengthString = $" Xi = {renormalisedCorrelationLength} +- {renormalisedCorrelationLengthSigma}";
         var susceptibilityString = $"Chi = {susceptibility} +- {susceptibilitySigma}";
+        var specificHeatString = $"C = {specificHeat} +- {specificHeatSigma}";
 
         Console.WriteLine("\n");
         Console.WriteLine(magnetisationString);
@@ -189,6 +199,7 @@ public sealed class IsingSimulationWithObservablesComputation
         Console.WriteLine(correlationLengthYString);
         Console.WriteLine(renormalisedCorrelationLengthString);
         Console.WriteLine(susceptibilityString);
+        Console.WriteLine(specificHeatString);
 
         if (saveMeasurements)
         {
@@ -201,6 +212,7 @@ public sealed class IsingSimulationWithObservablesComputation
             magnetisationAbsolute,
             energy,
             susceptibility,
+            specificHeat,
             correlationLengthX,
             correlationLengthY,
             renormalisedCorrelationLength,
@@ -209,6 +221,7 @@ public sealed class IsingSimulationWithObservablesComputation
             magnetisationAbsoluteSigma,
             energySigma,
             susceptibilitySigma,
+            specificHeatSigma,
             correlationLengthXSigma,
             correlationLengthYSigma,
             renormalisedCorrelationLengthSigma,
@@ -219,7 +232,8 @@ public sealed class IsingSimulationWithObservablesComputation
             correlationLengthXList,
             correlationLengthYList,
             renormalisedCorrelationLengthList,
-            susceptibilityList);
+            susceptibilityList,
+            specificHeatList);
 
         void writeMeasurements()
         {
@@ -244,6 +258,7 @@ public sealed class IsingSimulationWithObservablesComputation
                 correlationLengthYString,
                 renormalisedCorrelationLengthString,
                 susceptibilityString,
+                specificHeatString,
                 "\n",
                 $"m = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationList) + "}};",
                 $"mSquared = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", magnetisationSquaredList) + "}};",
@@ -252,7 +267,8 @@ public sealed class IsingSimulationWithObservablesComputation
                 $"xiX = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthXList) + "}};",
                 $"xiY = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", correlationLengthYList) + "}};",
                 $"xi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", renormalisedCorrelationLengthList) + "}};",
-                $"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", susceptibilityList) + "}};"
+                $"chi = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", susceptibilityList) + "}};",
+                $"c = " + "{" + $"{_temperature}, " + "{" + string.Join(", ", specificHeatList) + "}};"
             };
 
             File.WriteAllLines(completePath, results);

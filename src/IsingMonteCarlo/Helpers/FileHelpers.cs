@@ -133,7 +133,7 @@ public static class FileHelpers
     public static string GetDataRootDirectory(IEnumerable<string>? namesToCombine = null)
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var rootDirectory = Directory.GetParent(workingDirectory).Parent?.Parent?.Parent?.Parent
+        var rootDirectory = Directory.GetParent(workingDirectory)?.Parent?.Parent?.Parent?.Parent
                          ?? throw new ArgumentNullException(nameof(workingDirectory));
 
         if (namesToCombine is null)
