@@ -1,0 +1,237 @@
+@page "/hysteresis"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Hysteresis — Ising simulator</PageTitle>
+
+<h1 class="page-title">Hysteresis below T꜀</h1>
+<p class="page-intro">
+    The external field h is ramped up and down in a triangle wave while the magnetisation follows.
+    Below T꜀ the response lags the drive — the system is stuck in a metastable branch until the field
+    is strong enough to nucleate the reversal, tracing the classic hysteresis loop. Above T꜀ the loop
+    collapses onto a reversible curve. (Local Glauber dynamics; the Wolff algorithm has no field.)
+</p>
+
+<div class="sim-layout">
+    <section class="lattice-panel">
+        <canvas id="hysteresis-canvas" class="lattice-canvas"></canvas>
+        <div class="readout-row">
+            <div class="readout"><span class="readout-label">T</span><span class="readout-value">@_temperature.ToString("0.00")</span></div>
+            <div class="readout"><span class="readout-label">h</span><span class="readout-value">@_field.ToString("+0.000;-0.000;0.000")</span></div>
+            <div class="readout"><span class="readout-label">M</span><span class="readout-value">@_magnetisation.ToString("+0.000;-0.000;0.000")</span></div>
+        </div>
+    </section>
+
+    <section class="hysteresis-chart">
+        <div class="chart-card">
+            <div class="chart-title">M–h loop (last two cycles)</div>
+            <svg viewBox="0 0 320 320" class="chart-svg chart-svg-tall" role="img" aria-label="Magnetisation versus field loop">
+                <line x1="10" x2="310" y1="160" y2="160" class="chart-grid" />
+                <line x1="160" x2="160" y1="10" y2="310" class="chart-grid" />
+                @((MarkupString)"<text x=\"304\" y=\"174\" class=\"chart-tick\" text-anchor=\"end\">h</text>")
+                @((MarkupString)"<text x=\"168\" y=\"18\" class=\"chart-tick\">M</text>")
+                @if (_trace.Count > 1)
+                {
+                    <polyline points="@TracePoints()" fill="none" stroke="var(--series-1)" stroke-width="2"
+                              stroke-linejoin="round" stroke-linecap="round" opacity="0.9" />
+                    <circle cx="@LoopX(_field)" cy="@LoopY(_magnetisation)" r="5" fill="var(--series-8)" class="chart-end-dot" />
+                }
+            </svg>
+            <div class="chart-x-label">h ∈ [−@FieldAmplitude.ToString("0.0"), +@FieldAmplitude.ToString("0.0")], M ∈ [−1, 1]</div>
+        </div>
+    </section>
+
+    <aside class="controls">
+        <div class="control-group control-buttons">
+            <button class="btn btn-primary" @onclick="TogglePlay">@(_running ? "Pause" : "Run")</button>
+            <button class="btn" @onclick="ResetRun">Reset</button>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Temperature T = @_temperature.ToString("0.00")</label>
+            <input type="range" min="0.5" max="3.5" step="0.05" value="@_temperature"
+                   @oninput="@(e => OnTemperatureChanged(double.Parse((string)e.Value!)))" />
+            <div class="control-hint">Try T = 1.5 (wide loop), T = 2.2 (narrow), T = 3.0 (no loop).</div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Ramp rate</label>
+            <select value="@_sweepsPerFieldStep" @onchange="@(e => _sweepsPerFieldStep = int.Parse((string)e.Value!))">
+                <option value="1">fast (1 sweep per Δh)</option>
+                <option value="3">medium (3 sweeps per Δh)</option>
+                <option value="8">slow (8 sweeps per Δh)</option>
+            </select>
+            <div class="control-hint">Slower ramps are closer to equilibrium: the loop narrows.</div>
+        </div>
+    </aside>
+</div>
+
+@code {
+    private const int LatticeLength = 96;
+    private const double FieldAmplitude = 1.2;
+    private const double FieldStep = 0.02;
+    private const int TracePointsPerCycle = (int)(4.0 * FieldAmplitude / FieldStep);
+
+    private IsingMonteCarloSimulator _simulator = null!;
+    private readonly LatticeRenderer _renderer = new();
+    private readonly List<(double H, double M)> _trace = new();
+    private readonly System.Diagnostics.Stopwatch _uiRefresh = System.Diagnostics.Stopwatch.StartNew();
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<Hysteresis>? _selfReference;
+    private bool _interopReady;
+    private bool _running;
+    private double _temperature = 1.5;
+    private double _field;
+    private double _fieldDirection = 1.0;
+    private double _magnetisation;
+    private int _sweepsPerFieldStep = 3;
+
+    protected override void OnInitialized() => InitialiseSimulator();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/isingCanvas.js");
+        _selfReference = DotNetObjectReference.Create(this);
+        _interopReady = true;
+        Interop.CanvasInterop.InitCanvas("hysteresis-canvas", LatticeLength, LatticeLength);
+        RenderLattice();
+    }
+
+    [JSInvokable]
+    public Task OnAnimationFrame()
+    {
+        var beta = 1.0 / _temperature;
+        var totalSpins = _simulator.TotalSpinsCount;
+
+        _simulator.RunSteps(
+            (long)_sweepsPerFieldStep * totalSpins,
+            beta,
+            SimulationRunner.FerromagneticJ,
+            _field,
+            SpinUpdateMethod.Glauber);
+
+        _magnetisation = _simulator.Hamiltonian.GetAverageMagnetisation(SimulationRunner.FerromagneticJ, _field);
+        _trace.Add((_field, _magnetisation));
+        if (_trace.Count > 2 * TracePointsPerCycle)
+        {
+            _trace.RemoveAt(0);
+        }
+
+        _field += _fieldDirection * FieldStep;
+        if (_field >= FieldAmplitude || _field <= -FieldAmplitude)
+        {
+            _field = Math.Clamp(_field, -FieldAmplitude, FieldAmplitude);
+            _fieldDirection = -_fieldDirection;
+        }
+
+        _simulator.Hamiltonian.InvalidateTotalEnergy();
+
+        RenderLattice();
+        if (_uiRefresh.ElapsedMilliseconds > 120)
+        {
+            _uiRefresh.Restart();
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void InitialiseSimulator()
+    {
+        var totalSpins = LatticeLength * LatticeLength;
+        var spins = new List<int>(totalSpins);
+        for (var i = 0; i < totalSpins; i++)
+        {
+            spins.Add(1);
+        }
+
+        _simulator = new IsingMonteCarloSimulator(dimension: 2, LatticeLength, spins);
+        _field = 0.0;
+        _fieldDirection = 1.0;
+        _trace.Clear();
+    }
+
+    private async Task TogglePlay()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        _running = !_running;
+        if (_running)
+        {
+            await _module.InvokeVoidAsync("startLoop", _selfReference);
+        }
+        else
+        {
+            await _module.InvokeVoidAsync("stopLoop");
+        }
+    }
+
+    private void ResetRun()
+    {
+        InitialiseSimulator();
+        RenderLattice();
+    }
+
+    private void OnTemperatureChanged(double temperature)
+    {
+        _temperature = temperature;
+        _trace.Clear();
+    }
+
+    private void RenderLattice()
+    {
+        if (!_interopReady)
+        {
+            return;
+        }
+
+        _renderer.RenderSpins(_simulator.Lattice.Spins);
+        Interop.CanvasInterop.RenderFrame("hysteresis-canvas", _renderer.Buffer);
+    }
+
+    private double LoopX(double h) => 160.0 + h / FieldAmplitude * 145.0;
+
+    private double LoopY(double m) => 160.0 - m * 145.0;
+
+    private string TracePoints()
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var (h, m) in _trace)
+        {
+            builder.Append(LoopX(h).ToString("0.#"));
+            builder.Append(',');
+            builder.Append(LoopY(m).ToString("0.#"));
+            builder.Append(' ');
+        }
+
+        return builder.ToString();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _running = false;
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("stopLoop");
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _selfReference?.Dispose();
+    }
+}

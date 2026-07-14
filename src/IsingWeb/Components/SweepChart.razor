@@ -1,0 +1,190 @@
+@* Observable-vs-temperature chart: points with error bars, optional exact
+   reference curve (muted ink, dashed), optional T_c marker. Single measured
+   series per chart — one axis, no dual scales. *@
+
+<div class="chart-card">
+    <div class="chart-title">@Title</div>
+    <svg viewBox="0 0 @Width @Height" class="chart-svg chart-svg-tall" role="img" aria-label="@Title">
+        @foreach (var grid in GridValues())
+        {
+            <line x1="@PadLeft" x2="@(Width - PadRight)" y1="@Y(grid)" y2="@Y(grid)" class="chart-grid" />
+            @SvgText(PadLeft - 6, Y(grid) + 3.5, "chart-tick", "end", FormatTick(grid))
+        }
+
+        @if (ShowTcMarker && ExactIsing2D.CriticalTemperature >= _xMin && ExactIsing2D.CriticalTemperature <= _xMax)
+        {
+            <line x1="@X(ExactIsing2D.CriticalTemperature)" x2="@X(ExactIsing2D.CriticalTemperature)"
+                  y1="@PadTop" y2="@(Height - PadBottom)" class="chart-tc-marker" />
+            @SvgText(X(ExactIsing2D.CriticalTemperature) + 4, PadTop + 10, "chart-tick", "start", "T꜀")
+        }
+
+        @if (Overlay is not null && Overlay.Count > 1)
+        {
+            <polyline points="@OverlayPoints()" fill="none" class="chart-overlay" />
+        }
+
+        @foreach (var (x, y, sigma) in _points)
+        {
+            @if (!double.IsNaN(sigma) && sigma > 0)
+            {
+                <line x1="@X(x)" x2="@X(x)" y1="@Y(y - sigma)" y2="@Y(y + sigma)"
+                      stroke="@Stroke" stroke-width="1.5" />
+            }
+            <circle cx="@X(x)" cy="@Y(y)" r="4" fill="@Stroke" class="chart-dot">
+                <title>T = @x.ToString("0.000"): @y.ToString("0.0000")@(double.IsNaN(sigma) ? "" : $" ± {sigma:0.0000}")</title>
+            </circle>
+        }
+
+        @foreach (var tick in XTicks())
+        {
+            @SvgText(X(tick), Height - 4, "chart-tick", "middle", tick.ToString("0.0"))
+        }
+    </svg>
+    <div class="chart-x-label">@XLabel @(Overlay is not null ? "— dashed: exact (Onsager)" : "")</div>
+</div>
+
+@code {
+    private const int Width = 560;
+    private const int Height = 240;
+    private const int PadLeft = 52;
+    private const int PadRight = 12;
+    private const int PadTop = 12;
+    private const int PadBottom = 26;
+
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string XLabel { get; set; } = "Temperature T (J = 1, k_B = 1)";
+    [Parameter] public IReadOnlyList<(double X, double Y, double Sigma)> Points { get; set; } =
+        Array.Empty<(double, double, double)>();
+    [Parameter] public IReadOnlyList<(double X, double Y)>? Overlay { get; set; }
+    [Parameter] public string Stroke { get; set; } = "var(--series-1)";
+    [Parameter] public bool ShowTcMarker { get; set; } = true;
+    [Parameter] public double? FixedMin { get; set; }
+    [Parameter] public double? FixedMax { get; set; }
+
+    private List<(double X, double Y, double Sigma)> _points = new();
+    private double _xMin;
+    private double _xMax;
+    private double _yMin;
+    private double _yMax;
+
+    protected override void OnParametersSet()
+    {
+        _points = Points.Where(p => !double.IsNaN(p.Y)).ToList();
+
+        _xMin = double.PositiveInfinity;
+        _xMax = double.NegativeInfinity;
+        _yMin = double.PositiveInfinity;
+        _yMax = double.NegativeInfinity;
+
+        foreach (var (x, y, sigma) in _points)
+        {
+            _xMin = Math.Min(_xMin, x);
+            _xMax = Math.Max(_xMax, x);
+            var spread = double.IsNaN(sigma) ? 0.0 : sigma;
+            _yMin = Math.Min(_yMin, y - spread);
+            _yMax = Math.Max(_yMax, y + spread);
+        }
+
+        if (Overlay is not null)
+        {
+            foreach (var (x, y) in Overlay)
+            {
+                _yMin = Math.Min(_yMin, y);
+                _yMax = Math.Max(_yMax, y);
+            }
+        }
+
+        if (_points.Count is 0)
+        {
+            (_xMin, _xMax, _yMin, _yMax) = (0.0, 1.0, 0.0, 1.0);
+        }
+
+        if (FixedMin is not null)
+        {
+            _yMin = (double)FixedMin;
+        }
+
+        if (FixedMax is not null)
+        {
+            _yMax = (double)FixedMax;
+        }
+
+        var ySpan = _yMax - _yMin;
+        if (ySpan < 1e-9)
+        {
+            ySpan = 1.0;
+        }
+
+        if (FixedMin is null)
+        {
+            _yMin -= 0.08 * ySpan;
+        }
+
+        if (FixedMax is null)
+        {
+            _yMax += 0.08 * ySpan;
+        }
+
+        var xSpan = _xMax - _xMin;
+        if (xSpan < 1e-9)
+        {
+            xSpan = 1.0;
+        }
+
+        _xMin -= 0.03 * xSpan;
+        _xMax += 0.03 * xSpan;
+    }
+
+    private double X(double x) =>
+        PadLeft + (x - _xMin) / (_xMax - _xMin) * (Width - PadLeft - PadRight);
+
+    private double Y(double y) =>
+        Height - PadBottom - (y - _yMin) / (_yMax - _yMin) * (Height - PadTop - PadBottom);
+
+    private string OverlayPoints()
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var (x, y) in Overlay!)
+        {
+            if (x < _xMin || x > _xMax)
+            {
+                continue;
+            }
+
+            builder.Append(X(x).ToString("0.#"));
+            builder.Append(',');
+            builder.Append(Y(y).ToString("0.#"));
+            builder.Append(' ');
+        }
+
+        return builder.ToString();
+    }
+
+    private IEnumerable<double> GridValues()
+    {
+        yield return _yMin + 0.95 * (_yMax - _yMin);
+        yield return _yMin + 0.5 * (_yMax - _yMin);
+        yield return _yMin + 0.05 * (_yMax - _yMin);
+    }
+
+    private IEnumerable<double> XTicks()
+    {
+        if (_points.Count is 0)
+        {
+            yield break;
+        }
+
+        var span = _xMax - _xMin;
+        for (var i = 0; i < 5; i++)
+        {
+            yield return _xMin + span * (0.08 + 0.84 * i / 4.0);
+        }
+    }
+
+    private static string FormatTick(double value) =>
+        Math.Abs(value) >= 100 ? value.ToString("0") : value.ToString("0.##");
+
+    // Razor reserves the <text> tag, so SVG text elements are emitted as markup.
+    private static MarkupString SvgText(double x, double y, string cssClass, string anchor, string content) =>
+        new($"<text x=\"{x:0.#}\" y=\"{y:0.#}\" class=\"{cssClass}\" text-anchor=\"{anchor}\">{content}</text>");
+}

@@ -1,0 +1,26 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <header class="app-header">
+        <div class="app-title">
+            <span class="app-mark"></span>
+            <span>Ising model simulator</span>
+        </div>
+        <nav class="app-nav">
+            <NavLink href="" Match="NavLinkMatch.All">Simulator</NavLink>
+            <NavLink href="sweep">Temperature sweep</NavLink>
+            <NavLink href="hysteresis">Hysteresis</NavLink>
+            <NavLink href="renormalisation">Renormalisation</NavLink>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        @Body
+    </main>
+
+    <footer class="app-footer">
+        2D/1D Ising model Monte Carlo — Metropolis, Glauber and Wolff dynamics.
+        Runs entirely in your browser (.NET WebAssembly).
+        <a href="https://github.com/francisco-kim/IsingSimulator" target="_blank" rel="noopener">Source</a>
+    </footer>
+</div>

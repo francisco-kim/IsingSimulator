@@ -1,0 +1,119 @@
+@* Live single-series strip chart (SVG). One series per chart: no legend, the
+   title names it (dataviz: single series needs no legend box). *@
+
+<div class="chart-card">
+    <div class="chart-title">@Title</div>
+    <svg viewBox="0 0 @Width @Height" preserveAspectRatio="none" class="chart-svg" role="img" aria-label="@Title">
+        @foreach (var grid in GridValues())
+        {
+            <line x1="@PadLeft" x2="@(Width - PadRight)" y1="@Y(grid)" y2="@Y(grid)" class="chart-grid" />
+            @SvgText(PadLeft - 6, Y(grid) + 3.5, "chart-tick", "end", FormatTick(grid))
+        }
+        @if (XValues.Count > 1)
+        {
+            <polyline points="@PolylinePoints()" fill="none" stroke="@Stroke" stroke-width="2"
+                      stroke-linejoin="round" stroke-linecap="round" />
+            <circle cx="@X(XValues[^1])" cy="@Y(YValues[^1])" r="4" fill="@Stroke" class="chart-end-dot" />
+        }
+        else
+        {
+            @SvgText(Width / 2.0, Height / 2.0, "chart-empty", "middle", "waiting for samples…")
+        }
+    </svg>
+    <div class="chart-x-label">@XLabel</div>
+</div>
+
+@code {
+    private const int Width = 560;
+    private const int Height = 150;
+    private const int PadLeft = 44;
+    private const int PadRight = 10;
+    private const int PadTop = 10;
+    private const int PadBottom = 8;
+
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string XLabel { get; set; } = "Monte Carlo sweeps";
+    [Parameter] public IReadOnlyList<double> XValues { get; set; } = Array.Empty<double>();
+    [Parameter] public IReadOnlyList<double> YValues { get; set; } = Array.Empty<double>();
+    [Parameter] public string Stroke { get; set; } = "var(--series-1)";
+    [Parameter] public double? FixedMin { get; set; }
+    [Parameter] public double? FixedMax { get; set; }
+
+    private double _yMin;
+    private double _yMax;
+    private double _xMin;
+    private double _xMax;
+
+    protected override void OnParametersSet()
+    {
+        _xMin = XValues.Count > 0 ? XValues[0] : 0.0;
+        _xMax = XValues.Count > 0 ? XValues[^1] : 1.0;
+        if (Math.Abs(_xMax - _xMin) < 1e-12)
+        {
+            _xMax = _xMin + 1.0;
+        }
+
+        if (FixedMin is not null && FixedMax is not null)
+        {
+            (_yMin, _yMax) = ((double)FixedMin, (double)FixedMax);
+            return;
+        }
+
+        _yMin = double.PositiveInfinity;
+        _yMax = double.NegativeInfinity;
+        foreach (var value in YValues)
+        {
+            _yMin = Math.Min(_yMin, value);
+            _yMax = Math.Max(_yMax, value);
+        }
+
+        if (YValues.Count is 0 || _yMin > _yMax)
+        {
+            (_yMin, _yMax) = (0.0, 1.0);
+        }
+
+        var span = _yMax - _yMin;
+        if (span < 1e-9)
+        {
+            span = Math.Max(Math.Abs(_yMax), 1e-3) * 0.2;
+        }
+
+        _yMin -= 0.1 * span;
+        _yMax += 0.1 * span;
+    }
+
+    private double X(double x) =>
+        PadLeft + (x - _xMin) / (_xMax - _xMin) * (Width - PadLeft - PadRight);
+
+    private double Y(double y) =>
+        Height - PadBottom - (y - _yMin) / (_yMax - _yMin) * (Height - PadTop - PadBottom);
+
+    private string PolylinePoints()
+    {
+        var builder = new System.Text.StringBuilder();
+        var count = Math.Min(XValues.Count, YValues.Count);
+        for (var i = 0; i < count; i++)
+        {
+            builder.Append(X(XValues[i]).ToString("0.#"));
+            builder.Append(',');
+            builder.Append(Y(YValues[i]).ToString("0.#"));
+            builder.Append(' ');
+        }
+
+        return builder.ToString();
+    }
+
+    private IEnumerable<double> GridValues()
+    {
+        yield return _yMin + 0.98 * (_yMax - _yMin);
+        yield return _yMin + 0.5 * (_yMax - _yMin);
+        yield return _yMin + 0.02 * (_yMax - _yMin);
+    }
+
+    private static string FormatTick(double value) =>
+        Math.Abs(value) >= 100 ? value.ToString("0") : value.ToString("0.##");
+
+    // Razor reserves the <text> tag, so SVG text elements are emitted as markup.
+    private static MarkupString SvgText(double x, double y, string cssClass, string anchor, string content) =>
+        new($"<text x=\"{x:0.#}\" y=\"{y:0.#}\" class=\"{cssClass}\" text-anchor=\"{anchor}\">{content}</text>");
+}

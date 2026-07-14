@@ -1,0 +1,334 @@
+@page "/"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject SimulationRunner Runner
+@inject LatticeRenderer Renderer
+
+<PageTitle>Ising model simulator</PageTitle>
+
+<div class="sim-layout">
+    <section class="lattice-panel">
+        <canvas id="lattice-canvas" class="lattice-canvas @(Runner.Dimension is 1 ? "lattice-canvas-1d" : "")"></canvas>
+        <div class="readout-row">
+            <div class="readout"><span class="readout-label">M per spin</span><span class="readout-value">@Runner.Magnetisation.ToString("+0.000;-0.000;0.000")</span></div>
+            <div class="readout"><span class="readout-label">E per spin</span><span class="readout-value">@Runner.EnergyPerSite.ToString("0.000")</span></div>
+            <div class="readout"><span class="readout-label">sweeps</span><span class="readout-value">@Runner.CompletedSweeps.ToString("0")</span></div>
+            <div class="readout"><span class="readout-label">sweeps/s</span><span class="readout-value">@Runner.SweepsPerSecond.ToString("0.0")</span></div>
+        </div>
+    </section>
+
+    <aside class="controls">
+        <div class="control-group control-buttons">
+            <button class="btn btn-primary" @onclick="TogglePlay">@(Runner.IsRunning ? "Pause" : "Run")</button>
+            <button class="btn" @onclick="StepAsync" disabled="@Runner.IsRunning">Step</button>
+            <button class="btn" @onclick="ResetAsync">Reset</button>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">
+                Temperature T = @Runner.Temperature.ToString("0.000")
+                <button class="btn btn-mini" @onclick="SetToTc" title="Set T to the exact critical temperature 2/ln(1+√2)">T꜀</button>
+            </label>
+            <input type="range" min="0.05" max="5" step="0.005"
+                   value="@Runner.Temperature"
+                   @oninput="@(e => Runner.Temperature = double.Parse((string)e.Value!))" />
+            <div class="slider-scale"><span>0.05</span><span class="tc-tick" style="left:@TcSliderPercent%">▲ T꜀</span><span>5.0</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">External field h = @Runner.Field.ToString("+0.00;-0.00;0.00")</label>
+            <input type="range" min="-2" max="2" step="0.01"
+                   value="@Runner.Field"
+                   disabled="@(Runner.Method is SpinUpdateMethod.Wolff)"
+                   title="@(Runner.Method is SpinUpdateMethod.Wolff ? "The Wolff cluster algorithm requires h = 0" : "")"
+                   @oninput="@(e => Runner.Field = double.Parse((string)e.Value!))" />
+            @if (Runner.Method is SpinUpdateMethod.Wolff)
+            {
+                <div class="control-hint">Wolff requires h = 0 — switch to Metropolis or Glauber to apply a field.</div>
+            }
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Dynamics</label>
+            <div class="segmented">
+                <button class="@SegClass(SpinUpdateMethod.Metropolis)" @onclick="() => SetMethod(SpinUpdateMethod.Metropolis)">Metropolis</button>
+                <button class="@SegClass(SpinUpdateMethod.Glauber)" @onclick="() => SetMethod(SpinUpdateMethod.Glauber)">Glauber</button>
+                <button class="@SegClass(SpinUpdateMethod.Wolff)" @onclick="() => SetMethod(SpinUpdateMethod.Wolff)">Wolff</button>
+            </div>
+            @if (Runner.Method is SpinUpdateMethod.Wolff)
+            {
+                <label class="check-label">
+                    <input type="checkbox" @bind="Runner.HighlightWolffCluster" />
+                    highlight growing cluster
+                </label>
+            }
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Lattice</label>
+            <div class="inline-controls">
+                <select value="@Runner.Dimension" @onchange="OnDimensionChangedAsync">
+                    <option value="2">2D</option>
+                    <option value="1">1D (spacetime)</option>
+                </select>
+                <select value="@Runner.LatticeLength" @onchange="OnSizeChangedAsync">
+                    @foreach (var size in SizeOptions())
+                    {
+                        <option value="@size">@(Runner.Dimension is 1 ? $"{size} spins" : $"{size} × {size}")</option>
+                    }
+                </select>
+                <select value="@(Runner.HotStart ? "hot" : "cold")" @onchange="OnInitChangedAsync"
+                        title="Hot start: random spins (T = ∞). Cold start: all spins up (T = 0).">
+                    <option value="hot">hot start</option>
+                    <option value="cold">cold start</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Speed &amp; view</label>
+            <div class="inline-controls">
+                <select value="@Runner.SweepsPerFrame" @onchange="@(e => Runner.SweepsPerFrame = double.Parse((string)e.Value!))">
+                    <option value="0.5">0.5 sweeps/frame</option>
+                    <option value="2">2 sweeps/frame</option>
+                    <option value="8">8 sweeps/frame</option>
+                    <option value="30">30 sweeps/frame</option>
+                </select>
+                @if (Runner.Dimension is 2)
+                {
+                    <select value="@Runner.ColourMode" @onchange="@(e => { Runner.ColourMode = Enum.Parse<LatticeColourMode>((string)e.Value!); RenderLattice(); })">
+                        <option value="@LatticeColourMode.Spins">spins (up/down)</option>
+                        <option value="@LatticeColourMode.Domains">domains (coloured)</option>
+                    </select>
+                }
+            </div>
+        </div>
+
+        <div class="control-group">
+            <button class="btn" @onclick="ExportPng">Export PNG</button>
+        </div>
+    </aside>
+</div>
+
+<section class="charts-row">
+    <StripChart Title="Magnetisation per spin M(t)" XValues="@Runner.SweepAxis" YValues="@Runner.MagnetisationSeries"
+                Stroke="var(--series-1)" FixedMin="-1.05" FixedMax="1.05" />
+    <StripChart Title="Energy per spin E(t)" XValues="@Runner.SweepAxis" YValues="@Runner.EnergySeries"
+                Stroke="var(--series-2)" />
+</section>
+
+@code {
+    private const int SpacetimeRows = 360;
+    private const double FrameBudgetMilliseconds = 10.0;
+
+    private readonly SpacetimeBuffer _spacetime = new();
+    private readonly System.Diagnostics.Stopwatch _uiRefresh = System.Diagnostics.Stopwatch.StartNew();
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<Simulator>? _selfReference;
+    private bool _interopReady;
+
+    private static double TcSliderPercent =>
+        (ExactIsing2D.CriticalTemperature - 0.05) / (5.0 - 0.05) * 100.0;
+
+    protected override void OnInitialized()
+    {
+        Runner.SweepCompletedIn1D = () => _spacetime.AppendRow(Runner.Simulator.Lattice.Spins);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/isingCanvas.js");
+        _selfReference = DotNetObjectReference.Create(this);
+        _interopReady = true;
+
+        ConfigureCanvas();
+        RenderLattice();
+
+        // ?autorun starts the simulation immediately (deep links, demos, tests).
+        if (Runner.IsRunning || Navigation.Uri.Contains("autorun", StringComparison.OrdinalIgnoreCase))
+        {
+            Runner.IsRunning = true;
+            await _module.InvokeVoidAsync("startLoop", _selfReference);
+        }
+    }
+
+    [JSInvokable]
+    public Task OnAnimationFrame()
+    {
+        Runner.Tick(FrameBudgetMilliseconds);
+        RenderLattice();
+
+        if (_uiRefresh.ElapsedMilliseconds > 150)
+        {
+            _uiRefresh.Restart();
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task TogglePlay()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        if (Runner.IsRunning)
+        {
+            Runner.Pause();
+            await _module.InvokeVoidAsync("stopLoop");
+            RenderLattice();
+        }
+        else
+        {
+            Runner.IsRunning = true;
+            await _module.InvokeVoidAsync("startLoop", _selfReference);
+        }
+    }
+
+    private Task StepAsync()
+    {
+        Runner.StepOneSweep();
+        RenderLattice();
+        return Task.CompletedTask;
+    }
+
+    private Task ResetAsync()
+    {
+        Runner.Reset();
+        ConfigureCanvas();
+        RenderLattice();
+        return Task.CompletedTask;
+    }
+
+    private void SetToTc() => Runner.Temperature = ExactIsing2D.CriticalTemperature;
+
+    private void SetMethod(SpinUpdateMethod method)
+    {
+        Runner.Method = method;
+        RenderLattice();
+    }
+
+    private string SegClass(SpinUpdateMethod method) =>
+        Runner.Method == method ? "seg-btn seg-btn-active" : "seg-btn";
+
+    private IEnumerable<int> SizeOptions() =>
+        Runner.Dimension is 1 ? new[] { 256, 512, 1024 } : new[] { 64, 128, 256, 512 };
+
+    private async Task OnDimensionChangedAsync(ChangeEventArgs e)
+    {
+        var dimension = int.Parse((string)e.Value!);
+        var latticeLength = dimension is 1 ? 512 : 128;
+        Runner.Configure(dimension, latticeLength, Runner.HotStart);
+        ConfigureCanvas();
+        RenderLattice();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnSizeChangedAsync(ChangeEventArgs e)
+    {
+        Runner.Configure(Runner.Dimension, int.Parse((string)e.Value!), Runner.HotStart);
+        ConfigureCanvas();
+        RenderLattice();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnInitChangedAsync(ChangeEventArgs e)
+    {
+        Runner.Configure(Runner.Dimension, Runner.LatticeLength, (string)e.Value! is "hot");
+        ConfigureCanvas();
+        RenderLattice();
+        await Task.CompletedTask;
+    }
+
+    private void ExportPng()
+    {
+        if (_interopReady)
+        {
+            var name = Runner.Dimension is 1
+                ? $"ising-1d-L{Runner.LatticeLength}-T{Runner.Temperature:0.000}.png"
+                : $"ising-2d-L{Runner.LatticeLength}-T{Runner.Temperature:0.000}.png";
+            Interop.CanvasInterop.DownloadCanvasPng("lattice-canvas", name);
+        }
+    }
+
+    private void ConfigureCanvas()
+    {
+        if (!_interopReady)
+        {
+            return;
+        }
+
+        if (Runner.Dimension is 1)
+        {
+            _spacetime.Configure(Runner.LatticeLength, SpacetimeRows);
+            Interop.CanvasInterop.InitCanvas("lattice-canvas", Runner.LatticeLength, SpacetimeRows);
+        }
+        else
+        {
+            Interop.CanvasInterop.InitCanvas("lattice-canvas", Runner.LatticeLength, Runner.LatticeLength);
+        }
+    }
+
+    private void RenderLattice()
+    {
+        if (!_interopReady)
+        {
+            return;
+        }
+
+        if (Runner.Dimension is 1)
+        {
+            Interop.CanvasInterop.RenderFrame("lattice-canvas", _spacetime.OrderedBuffer());
+            return;
+        }
+
+        var spins = Runner.Simulator.Lattice.Spins;
+        if (Runner.ColourMode is LatticeColourMode.Domains)
+        {
+            Renderer.RenderDomains(spins, Runner.LatticeLength);
+        }
+        else
+        {
+            Renderer.RenderSpins(spins);
+            if (Runner.Method is SpinUpdateMethod.Wolff
+                && Runner.HighlightWolffCluster
+                && Runner.Simulator.CurrentWolffCluster is { Count: > 0 } cluster
+                && Runner.Simulator.HasPendingWolffCluster)
+            {
+                Renderer.HighlightSites(cluster);
+            }
+        }
+
+        Interop.CanvasInterop.RenderFrame("lattice-canvas", Renderer.Buffer);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Runner.SweepCompletedIn1D = null;
+        Runner.Pause();
+
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("stopLoop");
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _selfReference?.Dispose();
+    }
+}

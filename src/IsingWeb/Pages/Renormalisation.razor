@@ -1,0 +1,165 @@
+@page "/renormalisation"
+@implements IDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Renormalisation — Ising simulator</PageTitle>
+
+<h1 class="page-title">Block-spin renormalisation</h1>
+<p class="page-intro">
+    A thermalised lattice is repeatedly coarse-grained with the 3×3 majority rule (Kadanoff block
+    spins). Away from T꜀ each step drives the system towards a trivial fixed point: below T꜀ the
+    blocks look increasingly ordered (T → 0), above T꜀ increasingly random (T → ∞). Exactly at T꜀
+    the configuration is statistically self-similar — the renormalised lattices look alike at every
+    scale. All panels are drawn at the same display size.
+</p>
+
+<div class="sweep-controls">
+    <label>
+        Temperature
+        <select @bind="_temperatureChoice" disabled="@_working">
+            <option value="below">T = 2.0 (below T꜀)</option>
+            <option value="critical">T = T꜀ ≈ 2.269</option>
+            <option value="above">T = 2.6 (above T꜀)</option>
+        </select>
+    </label>
+    <label>
+        Starting lattice
+        <select @bind="_startLatticeLength" disabled="@_working">
+            <option value="81">81 × 81 (fast)</option>
+            <option value="243">243 × 243 (best)</option>
+        </select>
+    </label>
+    <button class="btn btn-primary" @onclick="RunAsync" disabled="@_working">Thermalise &amp; renormalise</button>
+</div>
+
+@if (_working)
+{
+    <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:@((_progress * 100).ToString("0"))%"></div></div>
+        <span class="progress-status">@_status</span>
+    </div>
+}
+
+<section class="rg-panels">
+    @foreach (var (length, index) in _panelSizes.Select((l, i) => (l, i)))
+    {
+        <figure class="rg-panel">
+            <canvas id="@($"rg-canvas-{index}")" class="lattice-canvas"></canvas>
+            <figcaption>@(index is 0 ? $"{length} × {length} (original)" : $"{length} × {length} — step {index}")</figcaption>
+        </figure>
+    }
+</section>
+
+@code {
+    private readonly LatticeRenderer _renderer = new();
+
+    private bool _interopReady;
+    private bool _working;
+    private double _progress;
+    private string _status = "";
+    private string _temperatureChoice = "critical";
+    private int _startLatticeLength = 81;
+    private List<int> _panelSizes = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+            _interopReady = true;
+        }
+    }
+
+    private double SelectedTemperature => _temperatureChoice switch
+    {
+        "below" => 2.0,
+        "above" => 2.6,
+        _ => ExactIsing2D.CriticalTemperature
+    };
+
+    private async Task RunAsync()
+    {
+        if (!_interopReady || _working)
+        {
+            return;
+        }
+
+        _working = true;
+        _panelSizes = new List<int>();
+        var temperature = SelectedTemperature;
+        var beta = 1.0 / temperature;
+        var latticeLength = _startLatticeLength;
+        var totalSpins = latticeLength * latticeLength;
+
+        try
+        {
+            _status = $"Thermalising {latticeLength} × {latticeLength} at T = {temperature:0.000} (Wolff)…";
+            _progress = 0.0;
+            StateHasChanged();
+
+            var initialSpins = new List<int>(totalSpins);
+            for (var i = 0; i < totalSpins; i++)
+            {
+                initialSpins.Add(Random.Shared.Next(2) is 0 ? 1 : -1);
+            }
+
+            var simulator = new IsingMonteCarloSimulator(dimension: 2, latticeLength, initialSpins);
+
+            var thermalisationSweeps = 300;
+            var chunkSweeps = 5;
+            for (var sweep = 0; sweep < thermalisationSweeps; sweep += chunkSweeps)
+            {
+                simulator.RunSteps(
+                    (long)chunkSweeps * totalSpins,
+                    beta,
+                    SimulationRunner.FerromagneticJ,
+                    h: 0.0,
+                    SpinUpdateMethod.Wolff);
+                _progress = (double)sweep / thermalisationSweeps;
+                StateHasChanged();
+                await Task.Delay(1);
+            }
+
+            simulator.FlushWolffQueue(beta, SimulationRunner.FerromagneticJ, h: 0.0);
+
+            _status = "Coarse-graining (3×3 majority rule)…";
+            _progress = 1.0;
+            StateHasChanged();
+            await Task.Delay(1);
+
+            // Build the cascade 243 → 81 → 27 → 9 (or 81 → 27 → 9).
+            var cascade = new List<List<int>> { new(simulator.Lattice.Spins) };
+            var currentLength = latticeLength;
+            while (currentLength / 3 >= 9)
+            {
+                cascade.Add(IsingMonteCarlo.Services.Renormaliser.GenerateRenormalisedLattice(
+                    cascade[^1],
+                    finalLatticeSizeLimit: 9));
+                currentLength /= 3;
+            }
+
+            _panelSizes = cascade.Select(spins => (int)Math.Round(Math.Sqrt(spins.Count))).ToList();
+            StateHasChanged();
+            await Task.Delay(1);
+
+            for (var index = 0; index < cascade.Count; index++)
+            {
+                var size = _panelSizes[index];
+                Interop.CanvasInterop.InitCanvas($"rg-canvas-{index}", size, size);
+                _renderer.RenderSpins(cascade[index]);
+                Interop.CanvasInterop.RenderFrame($"rg-canvas-{index}", _renderer.Buffer);
+            }
+
+            _status = "Done.";
+        }
+        finally
+        {
+            _working = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+    }
+}

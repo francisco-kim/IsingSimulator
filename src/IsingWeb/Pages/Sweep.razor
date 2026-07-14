@@ -1,0 +1,149 @@
+@page "/sweep"
+@implements IDisposable
+@inject SweepRunner Sweeper
+
+<PageTitle>Observables vs temperature — Ising simulator</PageTitle>
+
+<h1 class="page-title">Observables across the phase transition</h1>
+<p class="page-intro">
+    Sweeps the temperature through the critical region and measures the order parameter ⟨|M|⟩,
+    the energy, the magnetic susceptibility χ, the specific heat C and the finite-size correlation
+    length ξ/L (two-momentum estimator from S(q₁)/S(q₂)). Error bars are the standard deviation over
+    independent measurement blocks. The dashed curve is Onsager's exact spontaneous magnetisation;
+    the vertical marker is the exact T꜀ = 2/ln(1+√2) ≈ 2.269.
+</p>
+
+<div class="sweep-controls">
+    <label>
+        Lattice
+        <select @bind="_latticeLength" disabled="@Sweeper.IsRunning">
+            <option value="24">24 × 24</option>
+            <option value="32">32 × 32</option>
+            <option value="48">48 × 48</option>
+            <option value="64">64 × 64</option>
+        </select>
+    </label>
+    <label>
+        T range
+        <input type="number" step="0.1" min="0.5" max="4.5" @bind="_minTemperature" disabled="@Sweeper.IsRunning" style="width:4.5rem" />
+        –
+        <input type="number" step="0.1" min="0.6" max="5.0" @bind="_maxTemperature" disabled="@Sweeper.IsRunning" style="width:4.5rem" />
+    </label>
+    <label>
+        Points
+        <select @bind="_temperatureCount" disabled="@Sweeper.IsRunning">
+            <option value="13">13</option>
+            <option value="21">21</option>
+            <option value="31">31</option>
+        </select>
+    </label>
+    <label>
+        Dynamics
+        <select @bind="_method" disabled="@Sweeper.IsRunning">
+            <option value="@SpinUpdateMethod.Wolff">Wolff (recommended near T꜀)</option>
+            <option value="@SpinUpdateMethod.Metropolis">Metropolis</option>
+            <option value="@SpinUpdateMethod.Glauber">Glauber</option>
+        </select>
+    </label>
+    <label>
+        Quality
+        <select @bind="_quality" disabled="@Sweeper.IsRunning">
+            <option value="@SweepQuality.Quick">quick</option>
+            <option value="@SweepQuality.Standard">standard</option>
+            <option value="@SweepQuality.Thorough">thorough</option>
+        </select>
+    </label>
+
+    @if (Sweeper.IsRunning)
+    {
+        <button class="btn" @onclick="Sweeper.Cancel">Cancel</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" @onclick="StartAsync">Run sweep</button>
+    }
+    <button class="btn" @onclick="ExportCsv" disabled="@(Sweeper.Points.Count is 0)">Export CSV</button>
+</div>
+
+@if (Sweeper.IsRunning || Sweeper.Points.Count > 0)
+{
+    <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:@((Sweeper.Progress * 100).ToString("0"))%"></div></div>
+        <span class="progress-status">@Sweeper.Status</span>
+    </div>
+}
+
+<section class="charts-grid">
+    <SweepChart Title="Order parameter ⟨|M|⟩"
+                Points="@Select(p => (p.Temperature, p.MagnetisationAbsolute, p.MagnetisationAbsoluteSigma))"
+                Overlay="@ExactMagnetisationCurve()"
+                Stroke="var(--series-1)" FixedMin="0" FixedMax="1.05" />
+    <SweepChart Title="Susceptibility χ = Nβ(⟨M²⟩ − ⟨|M|⟩²)"
+                Points="@Select(p => (p.Temperature, p.Susceptibility, p.SusceptibilitySigma))"
+                Stroke="var(--series-2)" FixedMin="0" />
+    <SweepChart Title="Specific heat C = Nβ²(⟨e²⟩ − ⟨e⟩²)"
+                Points="@Select(p => (p.Temperature, p.SpecificHeat, p.SpecificHeatSigma))"
+                Stroke="var(--series-3)" FixedMin="0" />
+    <SweepChart Title="Energy per spin ⟨E⟩"
+                Points="@Select(p => (p.Temperature, p.Energy, p.EnergySigma))"
+                Stroke="var(--series-2)" />
+    <SweepChart Title="Correlation length ξ/L"
+                Points="@Select(p => (p.Temperature, p.CorrelationLengthOverL, p.CorrelationLengthOverLSigma))"
+                Stroke="var(--series-1)" FixedMin="0" />
+</section>
+
+@code {
+    private int _latticeLength = 32;
+    private double _minTemperature = 1.5;
+    private double _maxTemperature = 3.2;
+    private int _temperatureCount = 21;
+    private SpinUpdateMethod _method = SpinUpdateMethod.Wolff;
+    private SweepQuality _quality = SweepQuality.Standard;
+
+    protected override void OnInitialized() => Sweeper.Updated += OnSweeperUpdated;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+        }
+    }
+
+    private void OnSweeperUpdated() => InvokeAsync(StateHasChanged);
+
+    private async Task StartAsync() =>
+        await Sweeper.RunAsync(
+            _latticeLength,
+            _minTemperature,
+            _maxTemperature,
+            _temperatureCount,
+            _method,
+            _quality);
+
+    private void ExportCsv()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Interop.CanvasInterop.DownloadText(
+                $"ising-sweep-L{_latticeLength}.csv",
+                Sweeper.ToCsv());
+        }
+    }
+
+    private List<(double, double, double)> Select(Func<SweepPoint, (double, double, double)> projection) =>
+        Sweeper.Points.Select(projection).ToList();
+
+    private List<(double X, double Y)> ExactMagnetisationCurve()
+    {
+        var points = new List<(double, double)>();
+        for (var t = 0.5; t <= 5.0; t += 0.01)
+        {
+            points.Add((t, ExactIsing2D.Magnetisation(t)));
+        }
+
+        return points;
+    }
+
+    public void Dispose() => Sweeper.Updated -= OnSweeperUpdated;
+}
