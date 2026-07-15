@@ -130,10 +130,18 @@ else
             StateHasChanged();
             await Task.Delay(1);
 
+            // Below T_c the equilibrium is ordered, so start cold (all up): a
+            // random start would seed a spanning domain wall that Wolff removes
+            // only by curvature-driven coarsening (τ ~ L²), which never finishes
+            // in a feasible sweep count at the large lattices. A cold start has
+            // no wall, so a handful of Wolff sweeps suffices at every size. At or
+            // above T_c there is no wall to remove, so a random hot start is fine.
+            var belowTc = temperature < ExactIsing2D.CriticalTemperature;
+            var aboveTc = temperature > ExactIsing2D.CriticalTemperature;
             var initialSpins = new List<int>(totalSpins);
             for (var i = 0; i < totalSpins; i++)
             {
-                initialSpins.Add(Random.Shared.Next(2) is 0 ? 1 : -1);
+                initialSpins.Add(belowTc ? 1 : (Random.Shared.Next(2) is 0 ? 1 : -1));
             }
 
             // Fast2D keeps only an int[][] (no precomputed per-site neighbour
@@ -142,14 +150,22 @@ else
             // statistically identical to the rest of the app (J = -1).
             var simulator = new Fast2DIsingMonteCarloSimulator(initialSpins);
 
-            // Wolff decorrelates in O(1) sweeps near T_c, so fewer sweeps suffice
-            // for a visually critical configuration as the lattice grows.
-            var thermalisationSweeps = latticeLength switch
-            {
-                <= 243 => 200,
-                729 => 110,
-                _ => 70
-            };
+            // Sweep budgets by regime. Off-critical (below or above T_c) the
+            // correlation length is finite, so equilibration is local and
+            // size-independent: a cold below-T_c start only grows thermal
+            // fluctuations on an ordered lattice, and an above-T_c start only
+            // grows correlations out to the short ξ — both settle in a few Wolff
+            // sweeps at every size. At T_c, ξ spans the lattice: this is the hard
+            // case, so keep a generous, size-tuned budget (Wolff's near-O(1)
+            // autocorrelation lets it shrink as the lattice grows).
+            var thermalisationSweeps = belowTc || aboveTc
+                ? 30
+                : latticeLength switch
+                {
+                    <= 243 => 200,
+                    729 => 110,
+                    _ => 70
+                };
             var chunkSweeps = Math.Max(1, 1_000_000 / totalSpins);
 
             var sweepsDone = 0;
