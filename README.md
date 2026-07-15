@@ -106,14 +106,18 @@ browser. Pages:
   domain colouring; live M(t) and E(t) charts; PNG export.
   Append `?autorun` to the URL to start the simulation on load.
 - **Observables** — ⟨|M|⟩, χ, C, ⟨E⟩ and ξ/L across the critical
-  region with error bars, the exact M(T) overlay and the T꜀ marker; CSV export.
+  region with error bars, the exact M(T) overlay and the T꜀ marker; selectable
+  lattice size (up to 96²) and measurement quality; CSV export.
 - **Hysteresis** — triangle-wave field drive below T꜀ tracing the M–h loop.
-- **Renormalisation** — repeated 3×3 majority-rule block-spin steps at,
-  below and above T꜀ (scale invariance at criticality).
+- **Renormalisation** — repeated 3×3 majority-rule block-spin steps that
+  trace the renormalisation-group (RG) flow at, below and above T꜀ (scale
+  invariance at criticality).
 - **XY model** — 2D XY model with phase-hue colouring, live vortex and
   antivortex counters, and four preset temperatures spanning the KT
   transition; an optional overlay draws per-site spin arrows around each
-  vortex core (off by default) so the phase winding is visible.
+  vortex core (off by default) so the phase winding is visible. An in-page
+  explainer works through why the vortices are topologically stable, tying
+  their integer charge to the fundamental group π₁(S¹) = ℤ.
 
 ### Console app
 
