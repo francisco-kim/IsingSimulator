@@ -410,6 +410,15 @@ input[type="number"] {
     margin-bottom: 0.5rem;
 }
 
+/* Keep typeset chart titles and inline prose maths at the size of the text
+   around them, rather than KaTeX's default 1.21em enlargement. */
+.chart-title .katex,
+.page-intro .katex,
+.explainer p .katex,
+.explainer li .katex {
+    font-size: 1em;
+}
+
 .chart-svg {
     width: 100%;
     height: auto;
@@ -479,6 +488,24 @@ input[type="number"] {
     margin: 0 0 0.6rem;
 }
 
+.explainer h2:not(:first-child) {
+    margin-top: 1.5rem;
+}
+
+.explainer-list {
+    color: var(--text-secondary);
+    margin: 0.6rem 0;
+    padding-left: 1.2rem;
+}
+
+.explainer-list li {
+    margin: 0.5rem 0;
+}
+
+.explainer-list strong {
+    color: var(--text-primary);
+}
+
 .explainer p {
     color: var(--text-secondary);
     margin: 0.6rem 0;
@@ -517,6 +544,19 @@ input[type="number"] {
     flex-direction: column;
     gap: 0.25rem;
     font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.controls-note {
+    flex-basis: 100%;
+    margin: 0.1rem 0 0;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+    max-width: 62rem;
+}
+
+.controls-note strong {
     color: var(--text-secondary);
 }
 

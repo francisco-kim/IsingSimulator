@@ -2,7 +2,16 @@
    title names it (dataviz: single series needs no legend box). *@
 
 <div class="chart-card">
-    <div class="chart-title">@Title</div>
+    @if (TitleMath is null)
+    {
+        <div class="chart-title">@Title</div>
+    }
+    else
+    {
+        @* KaTeX fills this once (renderKatex); the frame is static so Blazor's
+           later strip-chart updates never wipe the typeset title. *@
+        <div class="chart-title" data-katex="@TitleMath"></div>
+    }
     <svg viewBox="0 0 @Width @Height" preserveAspectRatio="none" class="chart-svg" role="img" aria-label="@Title">
         @foreach (var grid in GridValues())
         {
@@ -32,6 +41,7 @@
     private const int PadBottom = 8;
 
     [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? TitleMath { get; set; }
     [Parameter] public string XLabel { get; set; } = "Monte Carlo sweeps";
     [Parameter] public IReadOnlyList<double> XValues { get; set; } = Array.Empty<double>();
     [Parameter] public IReadOnlyList<double> YValues { get; set; } = Array.Empty<double>();

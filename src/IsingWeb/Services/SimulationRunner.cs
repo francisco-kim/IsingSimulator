@@ -27,7 +27,7 @@ public sealed class SimulationRunner
     private double _sweepCarry;
     private SpinUpdateMethod _method = SpinUpdateMethod.Metropolis;
 
-    public SimulationRunner() => Configure(dimension: 2, latticeLength: 128, hotStart: true);
+    public SimulationRunner() => Configure(dimension: 2, latticeLength: 256, hotStart: true);
 
     public IsingMonteCarloSimulator Simulator { get; private set; } = null!;
 

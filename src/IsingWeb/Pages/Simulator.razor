@@ -116,9 +116,11 @@
 </div>
 
 <section class="charts-row">
-    <StripChart Title="Magnetisation per spin M(t)" XValues="@Runner.SweepAxis" YValues="@Runner.MagnetisationSeries"
+    <StripChart Title="Magnetisation per spin M(t)" TitleMath="\text{Magnetisation per spin } M(t)"
+                XValues="@Runner.SweepAxis" YValues="@Runner.MagnetisationSeries"
                 Stroke="var(--series-1)" FixedMin="-1.05" FixedMax="1.05" />
-    <StripChart Title="Energy per spin E(t)" XValues="@Runner.SweepAxis" YValues="@Runner.EnergySeries"
+    <StripChart Title="Energy per spin E(t)" TitleMath="\text{Energy per spin } E(t)"
+                XValues="@Runner.SweepAxis" YValues="@Runner.EnergySeries"
                 Stroke="var(--series-2)" />
 </section>
 
@@ -268,7 +270,7 @@
     private async Task OnDimensionChangedAsync(ChangeEventArgs e)
     {
         var dimension = int.Parse((string)e.Value!);
-        var latticeLength = dimension is 1 ? 512 : 128;
+        var latticeLength = dimension is 1 ? 512 : 256;
         Runner.Configure(dimension, latticeLength, Runner.HotStart);
         ConfigureCanvas();
         RenderLattice();

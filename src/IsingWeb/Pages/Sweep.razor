@@ -1,16 +1,19 @@
 @page "/sweep"
 @implements IDisposable
 @inject SweepRunner Sweeper
+@inject IJSRuntime JS
 
 <PageTitle>Observables vs temperature — Ising simulator</PageTitle>
 
 <h1 class="page-title">Observables across the phase transition</h1>
 <p class="page-intro">
-    Sweeps the temperature through the critical region and measures the order parameter ⟨|M|⟩,
-    the energy, the magnetic susceptibility χ, the specific heat C and the finite-size correlation
-    length ξ/L (two-momentum estimator from S(q₁)/S(q₂)). Error bars are the standard deviation over
-    independent measurement blocks. The dashed curve is Onsager's exact spontaneous magnetisation;
-    the vertical marker is the exact T꜀ = 2/ln(1+√2) ≈ 2.269.
+    Sweeps the temperature through the critical region and measures the order parameter
+    <span data-katex="\langle |M| \rangle"></span>, the energy, the magnetic susceptibility
+    <span data-katex="\chi"></span>, the specific heat <span data-katex="C"></span> and the finite-size
+    correlation length <span data-katex="\xi/L"></span> (two-momentum estimator from
+    <span data-katex="S(q_1)/S(q_2)"></span>). Error bars are the standard deviation over independent
+    measurement blocks. The dashed curve is Onsager's exact spontaneous magnetisation; the vertical
+    marker is the exact <span data-katex="T_c = 2/\ln(1+\sqrt{2}) \approx 2.269"></span>.
 </p>
 
 <div class="sweep-controls">
@@ -21,6 +24,7 @@
             <option value="32">32 × 32</option>
             <option value="48">48 × 48</option>
             <option value="64">64 × 64</option>
+            <option value="96">96 × 96 (slow)</option>
         </select>
     </label>
     <label>
@@ -63,6 +67,13 @@
         <button class="btn btn-primary" @onclick="StartAsync">Run sweep</button>
     }
     <button class="btn" @onclick="ExportCsv" disabled="@(Sweeper.Points.Count is 0)">Export CSV</button>
+
+    <p class="controls-note">
+        <strong>Quality</strong> sets how hard each temperature point is worked — the number of
+        thermalisation sweeps and of averaged measurement blocks. <em>Quick</em> is fastest but
+        noisier; <em>thorough</em> gives smoother curves and smaller error bars but takes longer.
+        Larger lattices sharpen the transition but slow every point down.
+    </p>
 </div>
 
 @if (Sweeper.IsRunning || Sweeper.Points.Count > 0)
@@ -74,20 +85,22 @@
 }
 
 <section class="charts-grid">
-    <SweepChart Title="Order parameter ⟨|M|⟩"
+    <SweepChart Title="Order parameter ⟨|M|⟩" TitleMath="\text{Order parameter } \langle |M| \rangle"
                 Points="@Select(p => (p.Temperature, p.MagnetisationAbsolute, p.MagnetisationAbsoluteSigma))"
                 Overlay="@ExactMagnetisationCurve()"
                 Stroke="var(--series-1)" FixedMin="0" FixedMax="1.05" />
     <SweepChart Title="Susceptibility χ = Nβ(⟨M²⟩ − ⟨|M|⟩²)"
+                TitleMath="\text{Susceptibility } \chi = N\beta\bigl(\langle M^2\rangle - \langle |M|\rangle^2\bigr)"
                 Points="@Select(p => (p.Temperature, p.Susceptibility, p.SusceptibilitySigma))"
                 Stroke="var(--series-2)" FixedMin="0" />
     <SweepChart Title="Specific heat C = Nβ²(⟨e²⟩ − ⟨e⟩²)"
+                TitleMath="\text{Specific heat } C = N\beta^2\bigl(\langle e^2\rangle - \langle e\rangle^2\bigr)"
                 Points="@Select(p => (p.Temperature, p.SpecificHeat, p.SpecificHeatSigma))"
                 Stroke="var(--series-3)" FixedMin="0" />
-    <SweepChart Title="Energy per spin ⟨E⟩"
+    <SweepChart Title="Energy per spin ⟨E⟩" TitleMath="\text{Energy per spin } \langle E \rangle"
                 Points="@Select(p => (p.Temperature, p.Energy, p.EnergySigma))"
                 Stroke="var(--series-2)" />
-    <SweepChart Title="Correlation length ξ/L"
+    <SweepChart Title="Correlation length ξ/L" TitleMath="\text{Correlation length } \xi/L"
                 Points="@Select(p => (p.Temperature, p.CorrelationLengthOverL, p.CorrelationLengthOverLSigma))"
                 Stroke="var(--series-1)" FixedMin="0" />
 </section>
@@ -107,6 +120,7 @@
         if (firstRender)
         {
             await Interop.CanvasInterop.EnsureModuleLoadedAsync();
+            await JS.InvokeVoidAsync("renderKatex");
         }
     }
 

@@ -3,7 +3,16 @@
    series per chart — one axis, no dual scales. *@
 
 <div class="chart-card">
-    <div class="chart-title">@Title</div>
+    @if (TitleMath is null)
+    {
+        <div class="chart-title">@Title</div>
+    }
+    else
+    {
+        @* KaTeX fills this once (renderKatex); the frame is static so Blazor's
+           later point/error-bar updates never wipe the typeset title. *@
+        <div class="chart-title" data-katex="@TitleMath"></div>
+    }
     <svg viewBox="0 0 @Width @Height" class="chart-svg chart-svg-tall" role="img" aria-label="@Title">
         @foreach (var grid in GridValues())
         {
@@ -52,6 +61,7 @@
     private const int PadBottom = 26;
 
     [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? TitleMath { get; set; }
     [Parameter] public string XLabel { get; set; } = "Temperature T (J = 1, k_B = 1)";
     [Parameter] public IReadOnlyList<(double X, double Y, double Sigma)> Points { get; set; } =
         Array.Empty<(double, double, double)>();

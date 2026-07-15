@@ -6,11 +6,15 @@
 
 <h1 class="page-title">Block-spin renormalisation</h1>
 <p class="page-intro">
-    A thermalised lattice is repeatedly coarse-grained with the 3×3 majority rule (Kadanoff block
-    spins). Away from T꜀ each step drives the system towards a trivial fixed point: below T꜀ the
-    blocks look increasingly ordered (T → 0), above T꜀ increasingly random (T → ∞). Exactly at T꜀
-    the configuration is statistically self-similar — the renormalised lattices look alike at every
-    scale. All panels are drawn at the same display size.
+    A thermalised lattice is repeatedly coarse-grained with the
+    <span data-katex="3\times 3"></span> majority rule (Kadanoff block spins). Each step is a move
+    along the <strong>renormalisation group (RG) flow</strong>. Away from
+    <span data-katex="T_c"></span> the flow drives the system towards a trivial fixed point: below
+    <span data-katex="T_c"></span> the blocks look increasingly ordered
+    (<span data-katex="T \to 0"></span>), above <span data-katex="T_c"></span> increasingly random
+    (<span data-katex="T \to \infty"></span>). Exactly at <span data-katex="T_c"></span> the flow
+    stalls at the critical fixed point — the configuration is statistically self-similar and the
+    renormalised lattices look alike at every scale. All panels are drawn at the same display size.
 </p>
 
 <div class="sweep-controls">
@@ -19,7 +23,7 @@
         <select @bind="_temperatureChoice" disabled="@_working">
             <option value="below">T = 2.0 (below T꜀)</option>
             <option value="critical">T = T꜀ ≈ 2.269</option>
-            <option value="above">T = 2.6 (above T꜀)</option>
+            <option value="above">T = 2.35 (just above T꜀)</option>
         </select>
     </label>
     <label>
@@ -85,7 +89,7 @@ else
     private double _progress;
     private string _status = "";
     private string _temperatureChoice = "critical";
-    private int _startLatticeLength = 81;
+    private int _startLatticeLength = 243;
     private List<int> _panelSizes = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -101,7 +105,7 @@ else
     private double SelectedTemperature => _temperatureChoice switch
     {
         "below" => 2.0,
-        "above" => 2.6,
+        "above" => 2.35,
         _ => ExactIsing2D.CriticalTemperature
     };
 
@@ -143,8 +147,8 @@ else
             var thermalisationSweeps = latticeLength switch
             {
                 <= 243 => 200,
-                729 => 100,
-                _ => 45
+                729 => 110,
+                _ => 70
             };
             var chunkSweeps = Math.Max(1, 1_000_000 / totalSpins);
 

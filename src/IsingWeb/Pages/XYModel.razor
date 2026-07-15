@@ -93,9 +93,11 @@
 </div>
 
 <section class="charts-row">
-    <StripChart Title="Spin-vector modulus |m|(t)" XValues="@_sweepAxis" YValues="@_magnetisationSeries"
+    <StripChart Title="Spin-vector modulus |m|(t)" TitleMath="\text{Spin-vector modulus } |m|(t)"
+                XValues="@_sweepAxis" YValues="@_magnetisationSeries"
                 Stroke="var(--series-1)" FixedMin="0" FixedMax="1.05" />
-    <StripChart Title="Vortex count (t)" XValues="@_sweepAxis" YValues="@_vortexSeries"
+    <StripChart Title="Vortex count (t)" TitleMath="\text{Vortex count } (t)"
+                XValues="@_sweepAxis" YValues="@_vortexSeries"
                 Stroke="var(--series-8)" FixedMin="0" />
 </section>
 
@@ -141,6 +143,82 @@
         transition. On this periodic lattice the total winding must vanish, so the two counters always
         balance — vortices are created and destroyed strictly in pairs.
     </p>
+
+    <h2>Why are vortices stable? A topological argument</h2>
+    <p>
+        A vortex cannot be smoothed away by any local wiggle of the spins, and the reason is
+        topological rather than energetic. The order parameter of the XY model is an angle
+        <span data-katex="\theta"></span> — that is, a point on the circle
+        <span data-katex="S^1"></span> — so a whole configuration is a smooth map
+        <span data-katex="\varphi : \mathbb{R}^2 \to S^1"></span> from the plane to that circle.
+        Encircle a suspected defect by a closed loop <span data-katex="C"></span>. Walking once around
+        <span data-katex="C"></span>, the angle traces a path on the target circle and must come back
+        to itself up to a multiple of <span data-katex="2\pi"></span>; the number of times it wraps,
+    </p>
+    <div data-katex="q \;=\; \frac{1}{2\pi} \oint_{C} \nabla\theta \cdot \mathrm{d}\boldsymbol{\ell} \;\in\; \mathbb{Z} ,"
+         data-katex-display></div>
+    <p>
+        is the same winding number as before, and it <em>cannot change under any continuous
+        deformation of the field</em>. To alter <span data-katex="q"></span> you would have to unwind
+        the angle somewhere — forcing the field through a configuration where
+        <span data-katex="\theta"></span> is undefined (the modulus
+        <span data-katex="|m| \to 0"></span> at the core, a finite-energy barrier) — or drag the
+        defect out through the boundary. An infinitesimal change of the spins leaves
+        <span data-katex="q"></span> untouched, so a vortex carries a conserved integer charge and is
+        stable. That is exactly what <strong>topologically protected</strong> means: stability
+        guaranteed by an integer that continuity cannot change, independent of the details of the
+        energy.
+    </p>
+    <p>
+        These integers are not ad hoc — they are the elements of the first homotopy group (the
+        fundamental group) of the target space,
+    </p>
+    <div data-katex="\pi_1\!\left(S^1\right) \;=\; \mathbb{Z} ." data-katex-display></div>
+    <p>
+        The group <span data-katex="\pi_1(X)"></span> classifies loops in a space
+        <span data-katex="X"></span> up to continuous deformation; for the circle a loop is labelled
+        by how many times it winds, and windings add when loops are composed — hence
+        <span data-katex="\mathbb{Z}"></span>. Restricting the field to the loop gives a map
+        <span data-katex="\varphi|_C : C \to S^1"></span>, itself a loop in the target circle, and its
+        homotopy class is precisely <span data-katex="q"></span>. Vortices
+        (<span data-katex="q = +1"></span>), antivortices (<span data-katex="q = -1"></span>) and the
+        ordinary point (<span data-katex="q = 0"></span>) are simply the first few classes.
+    </p>
+    <p>
+        Written this way the classification is strikingly general: for <em>any</em> smooth map
+        <span data-katex="\varphi : \mathbb{R}^n \to S^1"></span> the defects are labelled by the same
+        integers, and three features are worth separating out.
+    </p>
+    <ul class="explainer-list">
+        <li>
+            <strong>The ambient dimension <span data-katex="n"></span> is irrelevant to the
+            classification.</strong> What supplies the labels is the <em>target</em> space
+            <span data-katex="S^1"></span>, through <span data-katex="\pi_1(S^1) = \mathbb{Z}"></span>;
+            whether the spins live on a plane (<span data-katex="n = 2"></span>), throughout a 3D
+            solid, or along a line does not change the group.
+        </li>
+        <li>
+            <strong>We probe a defect with loops.</strong> Drawing a loop (a 1-sphere
+            <span data-katex="S^1"></span>) around it and reading off the homotopy class of the
+            restricted map is what detects the charge — and because it is one-dimensional loops that
+            do the probing, it is <span data-katex="\pi_1"></span> of the target, not
+            <span data-katex="\pi_0"></span> or <span data-katex="\pi_2"></span>, that classifies these
+            defects.
+        </li>
+        <li>
+            <strong>The defect's own dimension is bookkeeping.</strong> In
+            <span data-katex="\mathbb{R}^2"></span> a loop bounds a disc, so the object it can trap is
+            a point: the defect here is a <strong>0-dimensional point vortex</strong>, exactly what is
+            marked on the lattice. The same encircling loop in
+            <span data-katex="\mathbb{R}^3"></span> instead threads a one-dimensional vortex line — in
+            general a codimension-2 object.
+        </li>
+    </ul>
+    <p>
+        So these vortices are stable for the same reason a knot tied in a closed loop of string cannot
+        be undone without cutting: a discrete, integer-valued invariant stands in the way, and no
+        infinitesimal — indeed no continuous — local change can step across it.
+    </p>
 </section>
 
 @code {
@@ -171,7 +249,7 @@
     private bool _showVortices = true;
     private bool _showArrows;
     private int _latticeLength = 128;
-    private double _sweepsPerFrame = 4;
+    private double _sweepsPerFrame = 1;
     private double _temperature = 0.85;
     private double _completedSweeps;
     private double _sweepsSinceRateSample;
