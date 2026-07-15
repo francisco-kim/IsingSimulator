@@ -41,6 +41,7 @@
                 <button class="btn btn-mini" @onclick="() => _temperature = 0.4">0.40 — deep quasi-order</button>
                 <button class="btn btn-mini" @onclick="() => _temperature = 0.85">0.85 — just below</button>
                 <button class="btn btn-mini" @onclick="() => _temperature = 0.95">0.95 — just above</button>
+                <button class="btn btn-mini" @onclick="() => _temperature = 1.2">1.20 — free vortices</button>
                 <button class="btn btn-mini" @onclick="() => _temperature = 1.6">1.60 — hot</button>
             </div>
             <div class="control-hint">
@@ -419,8 +420,9 @@
             // transition, where the count fluctuates a lot); fall back to single
             // pixels only once the vortex plasma would truly blot out the field.
             // Density-based so the switch happens at the same visual coverage on
-            // every lattice size (~6% of plaquettes carrying a cross).
-            var drawCross = _vortexCount + _antivortexCount < 0.06 * _latticeLength * _latticeLength;
+            // every lattice size (~11% of plaquettes carrying a cross), which
+            // keeps crosses through the free-vortex regime well above T_KT.
+            var drawCross = _vortexCount + _antivortexCount < 0.11 * _latticeLength * _latticeLength;
             _renderer.MarkPlaquettes(_vortexSites, _latticeLength, white: true, drawCross);
             _renderer.MarkPlaquettes(_antivortexSites, _latticeLength, white: false, drawCross);
         }
