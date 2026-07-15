@@ -37,7 +37,12 @@
         </div>
 
         <div class="control-group">
-            <label class="control-label">External field h = @Runner.Field.ToString("+0.00;-0.00;0.00")</label>
+            <label class="control-label">
+                External field h = @Runner.Field.ToString("+0.00;-0.00;0.00")
+                <button class="btn btn-mini" @onclick="ClearField"
+                        disabled="@(Runner.Method is SpinUpdateMethod.Wolff)"
+                        title="Set the external field back to zero">h = 0</button>
+            </label>
             <input type="range" min="-2" max="2" step="0.01"
                    value="@Runner.Field"
                    disabled="@(Runner.Method is SpinUpdateMethod.Wolff)"
@@ -254,6 +259,8 @@
     }
 
     private void SetToTc() => Runner.Temperature = ExactIsing2D.CriticalTemperature;
+
+    private void ClearField() => Runner.Field = 0.0;
 
     private void SetMethod(SpinUpdateMethod method)
     {
