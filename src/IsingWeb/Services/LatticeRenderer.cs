@@ -187,9 +187,22 @@ public sealed class LatticeRenderer
     {
         var rootA = Find(a);
         var rootB = Find(b);
-        if (rootA != rootB)
+        if (rootA == rootB)
+        {
+            return;
+        }
+
+        // Always point to the smaller index so each domain's canonical root is
+        // its lowest-indexed site. That root — and hence the hue keyed on it —
+        // stays put as spins flip inside the domain, instead of jumping around
+        // with the union order and making persistent domains flicker.
+        if (rootA < rootB)
         {
             _domainRoot[rootB] = rootA;
+        }
+        else
+        {
+            _domainRoot[rootA] = rootB;
         }
     }
 
