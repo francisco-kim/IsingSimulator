@@ -40,13 +40,13 @@
             <div class="inline-controls">
                 <button class="btn btn-mini" @onclick="() => _temperature = 0.4">0.40 — deep quasi-order</button>
                 <button class="btn btn-mini" @onclick="() => _temperature = 0.85">0.85 — just below</button>
-                <button class="btn btn-mini" @onclick="() => _temperature = 0.95">0.95 — just above</button>
-                <button class="btn btn-mini" @onclick="() => _temperature = 1.2">1.20 — free vortices</button>
+                <button class="btn btn-mini" @onclick="() => _temperature = 1.1">1.10 — free vortices</button>
                 <button class="btn btn-mini" @onclick="() => _temperature = 1.6">1.60 — hot</button>
             </div>
             <div class="control-hint">
                 Below T<sub>KT</sub>: few vortex–antivortex pairs, tightly bound. Above: pairs unbind and
-                free vortices proliferate.
+                free vortices proliferate (watch the vortex counter jump by orders of magnitude across
+                the transition — that density jump is the clearest visible KT signature).
             </div>
         </div>
 
@@ -139,7 +139,27 @@
         vortex–antivortex pairs, and spin correlations decay slowly, as power laws (quasi-long-range
         order — the hue drifts smoothly across the lattice). Above
         <span data-katex="T_{\mathrm{KT}}"></span> the pairs unbind: free vortices proliferate, scramble
-        the phase, and correlations collapse to exponential decay. Try the four preset temperatures and
+        the phase, and correlations collapse to exponential decay. Even then the picture is not one of
+        pairs visibly flying apart. Charge neutrality on the torus and Debye-style screening keep every
+        core shadowed by an opposite one, so at any accessible temperature most vortices still sit in
+        short-range <span data-katex="\pm"></span> pairs and a snapshot always looks paired. The
+        transition is thermodynamic, not visual, and Kosterlitz's free-energy argument makes it precise:
+        a lone vortex costs energy <span data-katex="E \approx \pi J \ln(L/a)"></span> (the phase winds
+        the whole way round the system) yet carries entropy
+        <span data-katex="S \approx 2 k_{\mathrm{B}} \ln(L/a)"></span> from the
+        <span data-katex="\sim (L/a)^2"></span> places its core can sit, so its free energy is
+    </p>
+    <div data-katex="F \;=\; E - T S \;\approx\; \big(\pi J - 2 k_{\mathrm{B}} T\big)\,\ln(L/a) ."
+         data-katex-display></div>
+    <p>
+        Below <span data-katex="T \approx \pi J / 2 k_{\mathrm{B}}"></span> energy wins,
+        <span data-katex="F > 0"></span>, and isolated vortices are suppressed on a large lattice; above
+        it entropy wins, <span data-katex="F < 0"></span>, and free vortices proliferate (interactions
+        soften this crude threshold down to the true
+        <span data-katex="k_{\mathrm{B}} T_{\mathrm{KT}} \approx 0.893\, J"></span>). The visible
+        consequence is the density jump on the counter — together with correlations crossing from
+        power-law to exponential decay — not pairs separating on screen. Try the four preset temperatures
+        and
         watch the vortex counter: it stays near zero, then jumps by orders of magnitude across the
         transition. On this periodic lattice the total winding must vanish, so the two counters always
         balance — vortices are created and destroyed strictly in pairs.
