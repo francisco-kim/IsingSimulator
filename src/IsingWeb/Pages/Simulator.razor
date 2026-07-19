@@ -163,6 +163,30 @@
         there is no transition at any <span data-katex="T > 0"></span>: thermal excitations (domain walls)
         cost only a finite energy and always proliferate.
     </p>
+
+    <h2>At the critical point: a conformal field theory</h2>
+    <p>
+        At <span data-katex="T_c"></span> the correlation length diverges, so the lattice spacing and the
+        box size drop out and no length scale is left: the model becomes <strong>scale invariant</strong>.
+        That is what you see on screen — domains of every size, statistically alike however far you zoom.
+        For a local, rotationally invariant theory scale invariance is upgraded to the larger
+        <strong>conformal</strong> symmetry: all coordinate changes
+        <span data-katex="x \mapsto x'(x)"></span> that rescale the metric by a position-dependent factor,
+    </p>
+    <div data-katex="g_{\mu\nu}(x) \;\longrightarrow\; g'_{\mu\nu}(x') \;=\; \Lambda(x)\, g_{\mu\nu}(x),"
+         data-katex-display></div>
+    <p>
+        i.e. maps that stretch lengths locally but preserve <em>angles</em>. Translations, rotations,
+        dilatations and the special conformal maps all satisfy this. Two dimensions are special: every
+        holomorphic map <span data-katex="z \mapsto w(z)"></span> is conformal, so the symmetry algebra is
+        infinite dimensional (Virasoro), which is enough to solve the critical theory exactly. The 2D Ising
+        critical point is the <span data-katex="c = 1/2"></span> minimal model — a free Majorana fermion —
+        and the scaling dimensions of its spin and energy operators
+        (<span data-katex="1/8"></span> and <span data-katex="1"></span>) fix the critical exponents
+        <span data-katex="\eta = 1/4"></span>, <span data-katex="\nu = 1"></span>,
+        <span data-katex="\beta = 1/8"></span> that govern the curves on the observables page. Universality
+        follows too: any microscopic model flowing to the same CFT shares those numbers.
+    </p>
 </section>
 
 @code {
