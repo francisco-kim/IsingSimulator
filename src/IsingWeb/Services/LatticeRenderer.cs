@@ -44,6 +44,31 @@ public sealed class LatticeRenderer
     }
 
     /// <summary>
+    ///     Renders a 1D chain as a horizontal strip <paramref name="height" />
+    ///     pixels tall: the chain is drawn once then copied down every row so it
+    ///     reads as a band rather than a one-pixel line.
+    /// </summary>
+    public byte[] RenderStrip(IReadOnlyList<int> spins, int height)
+    {
+        var width = spins.Count;
+        EnsurePixelCount(width * height);
+
+        for (var x = 0; x < width; x++)
+        {
+            var (r, g, b) = spins[x] > 0 ? SpinUpColour : SpinDownColour;
+            WritePixel(x, r, g, b);
+        }
+
+        var rowBytes = width * 4;
+        for (var y = 1; y < height; y++)
+        {
+            Array.Copy(_rgba, 0, _rgba, y * rowBytes, rowBytes);
+        }
+
+        return _rgba;
+    }
+
+    /// <summary>
     ///     Renders planar spins coloured by their phase: hue = angle. Used by
     ///     the XY model page.
     /// </summary>

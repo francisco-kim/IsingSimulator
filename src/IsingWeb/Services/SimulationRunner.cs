@@ -52,9 +52,6 @@ public sealed class SimulationRunner
 
     public bool HighlightWolffCluster { get; set; } = true;
 
-    /// <summary>Fires after each completed sweep while in 1D mode (spacetime row).</summary>
-    public Action? SweepCompletedIn1D { get; set; }
-
     public IReadOnlyList<double> SweepAxis => _sweepAxis;
 
     public IReadOnlyList<double> MagnetisationSeries => _magnetisationSeries;
@@ -148,15 +145,14 @@ public sealed class SimulationRunner
 
         if (Dimension is 1)
         {
-            // One spacetime row per completed sweep. Sub-1 rates accumulate in
-            // _sweepCarry so slow speeds draw a row only every few frames.
+            // Sub-1 rates accumulate in _sweepCarry so slow speeds still advance
+            // the chain by a whole sweep only every few frames.
             _sweepCarry += SweepsPerFrame;
             while (_sweepCarry >= 1.0)
             {
                 Simulator.RunSteps(totalSpins, beta, FerromagneticJ, _field, _method);
                 CompletedSweeps += 1.0;
                 _stepsSinceRateSample += totalSpins;
-                SweepCompletedIn1D?.Invoke();
                 _sweepCarry -= 1.0;
 
                 if (stopwatch.Elapsed.TotalMilliseconds > budgetMilliseconds)
@@ -196,11 +192,6 @@ public sealed class SimulationRunner
         Simulator.RunSteps(Simulator.TotalSpinsCount, beta, FerromagneticJ, _field, _method);
         Simulator.FlushWolffQueue(beta, FerromagneticJ, _field);
         CompletedSweeps += 1.0;
-        if (Dimension is 1)
-        {
-            SweepCompletedIn1D?.Invoke();
-        }
-
         SampleSeries(force: true);
     }
 
