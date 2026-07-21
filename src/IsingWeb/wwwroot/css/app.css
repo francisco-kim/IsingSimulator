@@ -187,7 +187,7 @@ html, body {
 
 .lattice-canvas-1d {
     aspect-ratio: auto;
-    height: auto;
+    height: 28px;
 }
 
 .canvas-stack {

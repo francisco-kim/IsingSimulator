@@ -190,7 +190,6 @@
 </section>
 
 @code {
-    private const int StripHeight = 48;
     private const double FrameBudgetMilliseconds = 10.0;
 
     private readonly System.Diagnostics.Stopwatch _uiRefresh = System.Diagnostics.Stopwatch.StartNew();
@@ -338,7 +337,8 @@
 
         if (Runner.Dimension is 1)
         {
-            Interop.CanvasInterop.InitCanvas("lattice-canvas", Runner.LatticeLength, StripHeight);
+            // One-row canvas; CSS stretches it to a fixed-height band.
+            Interop.CanvasInterop.InitCanvas("lattice-canvas", Runner.LatticeLength, 1);
         }
         else
         {
@@ -355,8 +355,8 @@
 
         if (Runner.Dimension is 1)
         {
-            var strip = Renderer.RenderStrip(Runner.Simulator.Lattice.Spins, StripHeight);
-            Interop.CanvasInterop.RenderFrame("lattice-canvas", strip);
+            Renderer.RenderSpins(Runner.Simulator.Lattice.Spins);
+            Interop.CanvasInterop.RenderFrame("lattice-canvas", Renderer.Buffer);
             return;
         }
 

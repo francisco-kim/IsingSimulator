@@ -93,6 +93,9 @@ dotnet run --project src/IsingSimulator
 
 # Run the web app locally, then open the printed localhost URL
 dotnet run --project src/IsingWeb
+
+# Same, but hot-reload on save for quick UI/CSS iteration
+dotnet watch --project src/IsingWeb
 ```
 
 ### Web app
