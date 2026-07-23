@@ -78,6 +78,69 @@ else
     </section>
 }
 
+<section class="explainer">
+    <h2>Reading the flow: fixed points and the beta function</h2>
+    <p>
+        Each coarse-graining step is a map on the couplings. At <span data-katex="h = 0"></span> the
+        microscopic model has a single coupling <span data-katex="K = J / k_{\mathrm{B}} T"></span>; the
+        <span data-katex="3\times 3"></span> majority rule replaces it by an effective coupling
+        <span data-katex="K'"></span> on the block lattice,
+    </p>
+    <div data-katex="K' \;=\; R(K) ," data-katex-display></div>
+    <p>
+        and that recursion <em>is</em> the RG flow in miniature. Its fixed points
+        <span data-katex="K^{*} = R(K^{*})"></span> are scale-invariant — coarse-graining changes nothing —
+        and since the correlation length shrinks by the block factor at every step,
+    </p>
+    <div data-katex="\xi(K') \;=\; \xi(K) / b , \qquad b = 3 ," data-katex-display></div>
+    <p>
+        a fixed point must have <span data-katex="\xi = 0"></span> or <span data-katex="\xi = \infty"></span>.
+        This model has three. Two are trivial, stable sinks — <span data-katex="T \to 0"></span> (all spins
+        aligned) and <span data-katex="T \to \infty"></span> (random) — and the flow drives every off-critical
+        lattice into one of them, which is exactly what the panels above show step by step. Between them sits
+        the <strong>unstable critical fixed point</strong> at <span data-katex="T_c"></span>, with
+        <span data-katex="\xi = \infty"></span>: it repels the flow, so only <em>exactly</em> at
+        <span data-katex="T_c"></span> do the coarse-grained panels stay statistically self-similar.
+    </p>
+    <p>
+        Linearise the map near the critical fixed point. Write the reduced temperature
+        <span data-katex="t = (T - T_c) / T_c"></span> — the one relevant coupling here — which scales under a
+        single step by the relevant eigenvalue of <span data-katex="\mathrm{d}R/\mathrm{d}K"></span>,
+    </p>
+    <div data-katex="t' \;=\; b^{\,y_t}\, t ." data-katex-display></div>
+    <p>
+        Letting the block factor approach unity turns the discrete recursion into a continuous flow with a
+        <strong>beta function</strong> — the same object as in field theory, written here for the temperature
+        coupling of this model:
+    </p>
+    <div data-katex="\beta(t) \;\equiv\; \frac{\mathrm{d}t}{\mathrm{d}\ln b} \;=\; y_t\, t \;=\; \frac{1}{\nu}\, t ." data-katex-display></div>
+    <p>
+        The beta function is universal: <span data-katex="\beta(g) = \mathrm{d}g / \mathrm{d}\ln(\text{scale})"></span>,
+        its sign saying which way a coupling runs and its zeros marking fixed points. Here the scale is the block
+        size <span data-katex="b"></span>; in QCD it is energy, and the analogous zero-slope statement is
+        asymptotic freedom.
+    </p>
+    <p>
+        It vanishes at the fixed point (<span data-katex="\beta(0) = 0"></span>, i.e. <span data-katex="T_c"></span>)
+        and its slope there is the inverse correlation-length exponent, <span data-katex="y_t = 1/\nu"></span>.
+        For the 2D Ising model <span data-katex="\nu = 1"></span> exactly (Onsager), so <span data-katex="y_t = 1"></span>
+        and integrating the beta function gives
+    </p>
+    <div data-katex="t(\ell) \;=\; \ell^{\,1/\nu}\, t_0 \;=\; \ell\, t_0 , \qquad \xi \;\sim\; |t|^{-\nu} ." data-katex-display></div>
+    <p>
+        A tiny departure from <span data-katex="T_c"></span> grows linearly with the scale
+        <span data-katex="\ell"></span>: the flow leaves criticality faster the coarser you look, which is why
+        the off-critical panels visibly order or randomise as the cascade proceeds. Two honest caveats. First,
+        the magnetic field is a second relevant coupling, with <span data-katex="y_h = 15/8"></span>, but it is
+        switched off here (<span data-katex="h = 0"></span>), so temperature alone controls the picture. Second,
+        a genuine <span data-katex="3\times 3"></span> majority rule does not preserve a single coupling: each
+        step generates longer-range and multi-spin terms, so the true flow lives in an infinite-dimensional
+        space and <span data-katex="K' = R(K)"></span> is its projection onto the relevant direction. The other,
+        irrelevant directions die away under the flow — which is precisely why the one-parameter beta function
+        above still captures the universal exponent <span data-katex="\nu"></span>.
+    </p>
+</section>
+
 @code {
     // Sizes of the pre-rendered example cascade in wwwroot/images/rg-example/.
     private static readonly int[] ExampleSizes = { 2187, 729, 243, 81, 27, 9 };
