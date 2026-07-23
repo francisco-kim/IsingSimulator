@@ -1,0 +1,245 @@
+@page "/central-charge"
+@using IsingMonteCarlo.Services
+@inject IJSRuntime JS
+
+<PageTitle>Central charge — Ising simulator</PageTitle>
+
+<h1 class="page-title">The central charge of the critical point</h1>
+<p class="page-intro">
+    At <span data-katex="T_c"></span> the 2D Ising model is described by a conformal field theory with
+    <strong>central charge</strong> <span data-katex="c = 1/2"></span> — a universal number that
+    counts the theory's low-energy degrees of freedom and is not directly a Monte Carlo observable.
+    It is extracted here <em>exactly</em>, with no sampling noise, from Kaufman's free-fermion
+    diagonalisation of the transfer matrix: the largest eigenvalue on a width-
+    <span data-katex="L"></span> cylinder fixes a free energy <span data-katex="g(L)"></span> whose
+    finite-size correction is Cardy's universal amplitude,
+    <span data-katex="g(L) = g_\infty + \pi c / (6 L^2)"></span>. The same fermion spectrum also gives
+    the two leading operator dimensions, <span data-katex="x_\sigma"></span> and
+    <span data-katex="x_\varepsilon"></span>, from the sector and momentum gaps.
+</p>
+
+<div class="sweep-controls">
+    <label>
+        Largest lattice width
+        <select @bind="_lMaxIndex" @bind:after="Recompute">
+            <option value="0">64</option>
+            <option value="1">128</option>
+            <option value="2">256</option>
+        </select>
+    </label>
+    <p class="controls-note">
+        Every quantity below is exact and computed instantly — there is no simulation to run.
+        A larger width sharpens the finite-size fit and the operator-dimension estimates.
+    </p>
+</div>
+
+<div class="readout-row">
+    <div class="readout"><span class="readout-label">central charge <span data-katex="c"></span></span><span class="readout-value">@_centralCharge.ToString("0.00000")</span></div>
+    <div class="readout"><span class="readout-label"><span data-katex="x_\sigma"></span> (spin)</span><span class="readout-value">@_xSigma.ToString("0.00000")</span></div>
+    <div class="readout"><span class="readout-label"><span data-katex="x_\varepsilon"></span> (energy)</span><span class="readout-value">@_xEpsilon.ToString("0.00000")</span></div>
+    <div class="readout"><span class="readout-label">fit <span data-katex="g_\infty"></span></span><span class="readout-value">@_gInfinityFit.ToString("0.000000")</span></div>
+    <div class="readout"><span class="readout-label">fit <span data-katex="A"></span> (amplitude)</span><span class="readout-value">@_a.ToString("0.000000")</span></div>
+</div>
+
+<section class="charts-grid">
+    <ScalingChart Title="g(L) vs 1/L² — fit gives g∞ and A"
+                  TitleMath="g(L) \text{ vs } 1/L^2"
+                  XLabel="1 / L²"
+                  Series="@_seriesFreeEnergy"
+                  FitLine="@_fitLine"
+                  ShowTcMarker="false" />
+    <ScalingChart Title="(g(L) − g∞)·L² → πc/6 = π/12"
+                  TitleMath="(g(L) - g_\infty) L^2 \to \pi c / 6"
+                  XLabel="L"
+                  Series="@_seriesAmplitude"
+                  ReferenceY="@(Math.PI / 12.0)"
+                  ReferenceLabel="π/12"
+                  ShowTcMarker="false" />
+    <ScalingChart Title="Effective central charge c_eff(L, T)"
+                  TitleMath="c_{\mathrm{eff}}(L, T)"
+                  Series="@_seriesCEff"
+                  ReferenceY="0.5"
+                  ReferenceLabel="1/2"
+                  ShowTcMarker="true"
+                  FixedMin="0">
+        <XLabelContent>Temperature <span data-katex="T"></span> (<span data-katex="J = 1"></span>, <span data-katex="k_{\mathrm{B}} = 1"></span>)</XLabelContent>
+    </ScalingChart>
+</section>
+
+<table class="data-table">
+    <caption>Per-width results at T꜀</caption>
+    <thead>
+        <tr>
+            <th><span data-katex="L"></span></th>
+            <th><span data-katex="g(L)"></span></th>
+            <th><span data-katex="x_\sigma(L)"></span></th>
+            <th><span data-katex="x_\varepsilon(L)"></span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in _tableRows)
+        {
+            <tr>
+                <td>@row.Width</td>
+                <td>@row.G.ToString("0.000000")</td>
+                <td>@row.XSigma.ToString("0.00000")</td>
+                <td>@row.XEpsilon.ToString("0.00000")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<section class="explainer">
+    <h2>Free fermions, the Casimir energy and the operator content</h2>
+    <p>
+        On a cylinder of circumference <span data-katex="L"></span>, Kaufman's solution diagonalises the
+        Ising transfer matrix as free fermions with dispersion
+    </p>
+    <div data-katex="\cosh \gamma(q) \;=\; \cosh 2K \, \coth 2K \;-\; \cos q ," data-katex-display></div>
+    <p>
+        where <span data-katex="K = J / k_{\mathrm{B}} T"></span>. At the critical coupling
+        <span data-katex="K_c"></span> (fixed by <span data-katex="\sinh 2K_c = 1"></span>) this reduces to
+        <span data-katex="\cosh\gamma(q) = 2-\cos q"></span>, and as <span data-katex="q \to 0"></span>,
+        <span data-katex="\gamma(q) \approx |q|"></span> — a linear, relativistic dispersion whose slope is
+        the mode speed <span data-katex="v = 1"></span> for this isotropic lattice.
+    </p>
+    <p>
+        The ground-state (largest-eigenvalue) free energy per site of the cylinder,
+    </p>
+    <div data-katex="g(L) \;=\; \tfrac12\ln(2\sinh 2K) \;+\; \frac{1}{2L}\sum_{r=0}^{L-1}\gamma\!\biggl(\frac{\pi(2r+1)}{L}\biggr) ," data-katex-display></div>
+    <p>
+        acquires, at <span data-katex="K_c"></span>, a universal finite-size correction — the Casimir
+        energy of the critical strip — fixed by conformal invariance alone:
+    </p>
+    <div data-katex="g(L) \;=\; g_\infty \;+\; \frac{A}{L^2} \;+\; O(L^{-4}) , \qquad A \;\equiv\; \frac{\pi c v}{6} ." data-katex-display></div>
+    <p>
+        <span data-katex="A"></span> is the <strong>fitted amplitude</strong> shown above — the coefficient
+        of the <span data-katex="1/L^2"></span> correction in the first chart's straight-line fit. It is not
+        itself a physical constant; it is simply a stand-in for <span data-katex="\pi c v / 6"></span>, so
+        once it is known, inverting <span data-katex="A = \pi c v/6"></span> with
+        <span data-katex="v=1"></span> gives <span data-katex="c = 6A/\pi"></span> directly — the chart above
+        confirms <span data-katex="c \to 1/2"></span>. Independently, the amplitude
+        <span data-katex="(g(L)-g_\infty) L^2"></span> converges to the exact target
+        <span data-katex="\pi/12"></span> using the bulk free energy computed directly by quadrature, with
+        no fit at all — the second chart.
+    </p>
+    <p>
+        The same spectrum gives the scaling dimensions of the two other primary fields through the excited
+        eigenvalues, <span data-katex="\ln(\lambda_0/\lambda_n) = (2\pi v / L)\, x_n"></span>. The spin field
+        <span data-katex="\sigma"></span> lives in the twisted (Ramond) sector, so its gap is the difference
+        between the periodic and antiperiodic sector ground states; the energy field
+        <span data-katex="\varepsilon"></span> is the lowest zero-momentum two-fermion state within the same
+        (Neveu&ndash;Schwarz) sector as the ground state. Both converge to their exact CFT values,
+        <span data-katex="x_\sigma = 1/8"></span> and <span data-katex="x_\varepsilon = 1"></span>, shown in
+        the readouts and table above.
+    </p>
+    <p>
+        Away from <span data-katex="T_c"></span> the fermions acquire a gap,
+        <span data-katex="\gamma(0) = 2|K-K_c|"></span>, the finite-size correction becomes exponentially
+        small instead of a power law, and the effective central charge
+        <span data-katex="c_{\mathrm{eff}}(L,T) = 6L^2(g(L)-g_\infty)/\pi"></span> collapses towards zero —
+        exactly the behaviour in the third chart. <span data-katex="c=1/2"></span> is not a property of the
+        lattice model in general; it is a property of the critical point, and identifies the theory as the
+        first unitary minimal model, whose complete operator content is just
+        <span data-katex="\{\, 1,\ \sigma,\ \varepsilon \,\}"></span> — the identity and the two fields
+        measured on this page.
+    </p>
+</section>
+
+@code {
+    private static readonly int[] AllWidths = { 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256 };
+    private static readonly int[] CEffWidths = { 8, 16, 32 };
+
+    private int _lMaxIndex = 1;
+    private int LMax => _lMaxIndex switch { 0 => 64, 2 => 256, _ => 128 };
+
+    private double _centralCharge;
+    private double _xSigma;
+    private double _xEpsilon;
+    private double _gInfinityFit;
+    private double _a;
+
+    private List<(int Width, double G, double XSigma, double XEpsilon)> _tableRows = new();
+    private List<ScalingChart.ChartSeries> _seriesFreeEnergy = new();
+    private List<ScalingChart.ChartSeries> _seriesAmplitude = new();
+    private List<ScalingChart.ChartSeries> _seriesCEff = new();
+    private ((double X, double Y) From, (double X, double Y) To)? _fitLine;
+
+    protected override void OnInitialized()
+    {
+        Recompute();
+        ComputeCEffSeries();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("renderKatex");
+        }
+    }
+
+    private void Recompute()
+    {
+        var widths = AllWidths.Where(l => l <= LMax).ToList();
+        if (widths.Count < 3)
+        {
+            widths = AllWidths.Take(3).ToList();
+        }
+
+        var Kc = CentralChargeEstimator.CriticalCoupling;
+        var trueGInfinity = CentralChargeEstimator.FreeEnergyGInfinity(Kc);
+
+        (_gInfinityFit, _a) = CentralChargeEstimator.FitFreeEnergy(widths);
+        _centralCharge = 6.0 * _a / Math.PI;
+
+        var largestWidth = widths[^1];
+        _xSigma = CentralChargeEstimator.SigmaDimension(largestWidth);
+        _xEpsilon = CentralChargeEstimator.EpsilonDimension(largestWidth);
+
+        _tableRows = widths
+            .Select(l => (
+                l,
+                CentralChargeEstimator.FreeEnergyG(l, Kc),
+                CentralChargeEstimator.SigmaDimension(l),
+                CentralChargeEstimator.EpsilonDimension(l)))
+            .ToList();
+
+        _seriesFreeEnergy = new List<ScalingChart.ChartSeries>
+        {
+            new("g(L)", "var(--series-1)",
+                widths.Select(l => (1.0 / (l * (double)l), CentralChargeEstimator.FreeEnergyG(l, Kc))).ToList())
+        };
+
+        var maxU = 1.0 / (widths[0] * (double)widths[0]);
+        _fitLine = ((0.0, _gInfinityFit), (maxU, _gInfinityFit + _a * maxU));
+
+        _seriesAmplitude = new List<ScalingChart.ChartSeries>
+        {
+            new("(g(L) − g∞)·L²", "var(--series-2)",
+                widths.Select(l => ((double)l, (CentralChargeEstimator.FreeEnergyG(l, Kc) - trueGInfinity) * l * l)).ToList())
+        };
+    }
+
+    private void ComputeCEffSeries()
+    {
+        var series = new List<ScalingChart.ChartSeries>();
+        var strokes = new[] { "var(--series-1)", "var(--series-2)", "var(--series-3)" };
+
+        for (var i = 0; i < CEffWidths.Length; i++)
+        {
+            var width = CEffWidths[i];
+            var points = new List<(double, double)>();
+            for (var j = 0; j <= 59; j++)
+            {
+                var temperature = 1.5 + (3.2 - 1.5) * j / 59.0;
+                var coupling = 1.0 / temperature;
+                points.Add((temperature, CentralChargeEstimator.EffectiveCentralCharge(width, coupling)));
+            }
+
+            series.Add(new ScalingChart.ChartSeries($"L = {width}", strokes[i], points));
+        }
+
+        _seriesCEff = series;
+    }
+}

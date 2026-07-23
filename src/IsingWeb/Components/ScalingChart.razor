@@ -1,0 +1,221 @@
+@* Finite-size scaling chart: one or more point series, an optional straight fit
+   line, an optional dashed horizontal reference and an optional T_c marker.
+   Single axis throughout — used for the central-charge extraction. *@
+
+<div class="chart-card">
+    @if (TitleMath is null)
+    {
+        <div class="chart-title">@Title</div>
+    }
+    else
+    {
+        <div class="chart-title" data-katex="@TitleMath"></div>
+    }
+    <svg viewBox="0 0 @Width @Height" class="chart-svg chart-svg-tall" role="img" aria-label="@Title">
+        @foreach (var grid in GridValues())
+        {
+            <line x1="@PadLeft" x2="@(Width - PadRight)" y1="@Y(grid)" y2="@Y(grid)" class="chart-grid" />
+            @SvgText(PadLeft - 6, Y(grid) + 3.5, "chart-tick", "end", FormatTick(grid))
+        }
+
+        @if (ShowTcMarker && ExactIsing2D.CriticalTemperature >= _xMin && ExactIsing2D.CriticalTemperature <= _xMax)
+        {
+            <line x1="@X(ExactIsing2D.CriticalTemperature)" x2="@X(ExactIsing2D.CriticalTemperature)"
+                  y1="@PadTop" y2="@(Height - PadBottom)" class="chart-tc-marker" />
+            @SvgText(X(ExactIsing2D.CriticalTemperature) + 4, PadTop + 10, "chart-tick", "start", "T꜀")
+        }
+
+        @if (ReferenceY is not null)
+        {
+            <line x1="@PadLeft" x2="@(Width - PadRight)" y1="@Y((double)ReferenceY)" y2="@Y((double)ReferenceY)"
+                  class="chart-overlay" />
+            @if (ReferenceLabel is not null)
+            {
+                @SvgText(Width - PadRight - 4, Y((double)ReferenceY) - 4, "chart-tick", "end", ReferenceLabel)
+            }
+        }
+
+        @if (FitLine is not null)
+        {
+            var ((x1, y1), (x2, y2)) = FitLine.Value;
+            <line x1="@X(x1)" x2="@X(x2)" y1="@Y(y1)" y2="@Y(y2)" class="chart-fit-line" />
+        }
+
+        @foreach (var series in Series)
+        {
+            <polyline points="@SeriesPolyline(series)" fill="none" stroke="@series.Stroke" stroke-width="1.5" />
+            @foreach (var (x, y) in series.Points)
+            {
+                <circle cx="@X(x)" cy="@Y(y)" r="3.5" fill="@series.Stroke" class="chart-dot">
+                    <title>@series.Label: (@x.ToString("0.###"), @y.ToString("0.####"))</title>
+                </circle>
+            }
+        }
+
+        @foreach (var tick in XTicks())
+        {
+            @SvgText(X(tick), Height - 4, "chart-tick", "middle", FormatTick(tick))
+        }
+    </svg>
+    @if (Series.Count > 1)
+    {
+        <div class="chart-legend">
+            @foreach (var series in Series)
+            {
+                <span class="chart-legend-item">
+                    <span class="chart-legend-swatch" style="background:@series.Stroke"></span>@series.Label
+                </span>
+            }
+        </div>
+    }
+    <div class="chart-x-label">
+        @if (XLabelContent is not null)
+        {
+            @XLabelContent
+        }
+        else
+        {
+            @XLabel
+        }
+    </div>
+</div>
+
+@code {
+    public sealed record ChartSeries(string Label, string Stroke, IReadOnlyList<(double X, double Y)> Points);
+
+    private const int Width = 560;
+    private const int Height = 240;
+    private const int PadLeft = 52;
+    private const int PadRight = 12;
+    private const int PadTop = 12;
+    private const int PadBottom = 26;
+
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? TitleMath { get; set; }
+    [Parameter] public string XLabel { get; set; } = "";
+    [Parameter] public RenderFragment? XLabelContent { get; set; }
+    [Parameter] public IReadOnlyList<ChartSeries> Series { get; set; } = Array.Empty<ChartSeries>();
+    [Parameter] public ((double X, double Y) From, (double X, double Y) To)? FitLine { get; set; }
+    [Parameter] public double? ReferenceY { get; set; }
+    [Parameter] public string? ReferenceLabel { get; set; }
+    [Parameter] public bool ShowTcMarker { get; set; }
+    [Parameter] public double? FixedMin { get; set; }
+    [Parameter] public double? FixedMax { get; set; }
+
+    private double _xMin;
+    private double _xMax;
+    private double _yMin;
+    private double _yMax;
+
+    protected override void OnParametersSet()
+    {
+        _xMin = double.PositiveInfinity;
+        _xMax = double.NegativeInfinity;
+        _yMin = double.PositiveInfinity;
+        _yMax = double.NegativeInfinity;
+
+        foreach (var series in Series)
+        {
+            foreach (var (x, y) in series.Points)
+            {
+                _xMin = Math.Min(_xMin, x);
+                _xMax = Math.Max(_xMax, x);
+                _yMin = Math.Min(_yMin, y);
+                _yMax = Math.Max(_yMax, y);
+            }
+        }
+
+        if (ReferenceY is not null)
+        {
+            _yMin = Math.Min(_yMin, (double)ReferenceY);
+            _yMax = Math.Max(_yMax, (double)ReferenceY);
+        }
+
+        if (double.IsPositiveInfinity(_xMin))
+        {
+            (_xMin, _xMax, _yMin, _yMax) = (0.0, 1.0, 0.0, 1.0);
+        }
+
+        if (FixedMin is not null)
+        {
+            _yMin = (double)FixedMin;
+        }
+
+        if (FixedMax is not null)
+        {
+            _yMax = (double)FixedMax;
+        }
+
+        var ySpan = _yMax - _yMin;
+        if (ySpan < 1e-12)
+        {
+            ySpan = 1.0;
+        }
+
+        if (FixedMin is null)
+        {
+            _yMin -= 0.08 * ySpan;
+        }
+
+        if (FixedMax is null)
+        {
+            _yMax += 0.08 * ySpan;
+        }
+
+        var xSpan = _xMax - _xMin;
+        if (xSpan < 1e-12)
+        {
+            xSpan = 1.0;
+        }
+
+        _xMin -= 0.03 * xSpan;
+        _xMax += 0.03 * xSpan;
+    }
+
+    private double X(double x) =>
+        PadLeft + (x - _xMin) / (_xMax - _xMin) * (Width - PadLeft - PadRight);
+
+    private double Y(double y) =>
+        Height - PadBottom - (y - _yMin) / (_yMax - _yMin) * (Height - PadTop - PadBottom);
+
+    private string SeriesPolyline(ChartSeries series)
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var (x, y) in series.Points)
+        {
+            builder.Append(X(x).ToString("0.#"));
+            builder.Append(',');
+            builder.Append(Y(y).ToString("0.#"));
+            builder.Append(' ');
+        }
+
+        return builder.ToString();
+    }
+
+    private IEnumerable<double> GridValues()
+    {
+        yield return _yMin + 0.95 * (_yMax - _yMin);
+        yield return _yMin + 0.5 * (_yMax - _yMin);
+        yield return _yMin + 0.05 * (_yMax - _yMin);
+    }
+
+    private IEnumerable<double> XTicks()
+    {
+        var span = _xMax - _xMin;
+        for (var i = 0; i < 5; i++)
+        {
+            yield return _xMin + span * (0.08 + 0.84 * i / 4.0);
+        }
+    }
+
+    private static string FormatTick(double value) =>
+        Math.Abs(value) >= 100
+            ? value.ToString("0")
+            : Math.Abs(value) >= 1
+                ? value.ToString("0.##")
+                : value.ToString("0.####");
+
+    // Razor reserves the <text> tag, so SVG text elements are emitted as markup.
+    private static MarkupString SvgText(double x, double y, string cssClass, string anchor, string content) =>
+        new($"<text x=\"{x:0.#}\" y=\"{y:0.#}\" class=\"{cssClass}\" text-anchor=\"{anchor}\">{content}</text>");
+}

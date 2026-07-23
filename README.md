@@ -66,6 +66,39 @@ energy per spin, and
 Error bars are standard deviations over independent repetition blocks (the
 accumulators are reset between blocks).
 
+### Central charge and operator content
+
+`CentralChargeEstimator` extracts the critical point's **central charge**
+c = 1/2 and its two primary scaling dimensions **exactly**, with no Monte
+Carlo — c is not a sampling observable, it lives in a universal finite-size
+correction. It uses Kaufman's free-fermion diagonalisation of the transfer
+matrix on a width-L cylinder: the largest eigenvalue gives a reduced free
+energy g(L) whose finite-size term is Cardy's formula,
+
+```
+g(L) = g_∞ + π c v / (6 L²) ,        v = 1 (isotropic lattice)
+```
+
+so fitting g(L) at several widths reads off c directly. The same fermion
+spectrum gives the spin and energy scaling dimensions from sector/momentum
+gaps, x_σ = 1/8 and x_ε = 1 — the complete operator content of the c = 1/2
+minimal model. All of this is plotted on the web app's Central charge page.
+
+```csharp
+using IsingMonteCarlo.Services;
+
+var Kc = CentralChargeEstimator.CriticalCoupling;           // ½·ln(1 + √2)
+var g16 = CentralChargeEstimator.FreeEnergyG(16, Kc);        // cylinder free energy, L = 16
+
+var (gInfinity, a) = CentralChargeEstimator.FitFreeEnergy(new[] { 16, 24, 32, 48, 64 });
+var c = 6 * a / Math.PI;                                     // → 0.5000
+
+var xSigma = CentralChargeEstimator.SigmaDimension(64);       // → 0.125
+var xEpsilon = CentralChargeEstimator.EpsilonDimension(64);   // → 1.000
+
+var cEff = CentralChargeEstimator.EffectiveCentralCharge(16, 1.0 / 2.5); // off-critical, → 0
+```
+
 ## Repository layout
 
 ```
@@ -115,6 +148,9 @@ browser. Pages:
 - **Renormalisation** — repeated 3×3 majority-rule block-spin steps that
   trace the renormalisation-group (RG) flow at, below and above T꜀ (scale
   invariance at criticality).
+- **Central charge** — exact extraction of c = 1/2 and the operator
+  dimensions x_σ = 1/8, x_ε = 1 from the free-fermion transfer matrix, plus
+  the effective central charge collapsing away from T꜀.
 - **XY model** — 2D XY model with phase-hue colouring, live vortex and
   antivortex counters, and four preset temperatures spanning the KT
   transition; an optional overlay draws per-site spin arrows around each
@@ -142,6 +178,10 @@ tests, publishes the web app with AOT compilation, rewrites the
 ## References
 
 - L. Onsager, *Crystal statistics I*, Phys. Rev. **65**, 117 (1944).
+- B. Kaufman, *Crystal statistics II: Partition function evaluated by spinor
+  analysis*, Phys. Rev. **76**, 1232 (1949).
+- J. L. Cardy, *Conformal invariance and universality in finite-size
+  scaling*, J. Phys. A **17**, L385 (1984).
 - U. Wolff, *Collective Monte Carlo updating for spin systems*,
   Phys. Rev. Lett. **62**, 361 (1989).
 - M. E. J. Newman & G. T. Barkema, *Monte Carlo Methods in Statistical

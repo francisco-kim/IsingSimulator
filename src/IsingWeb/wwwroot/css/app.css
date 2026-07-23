@@ -432,7 +432,7 @@ input[type="number"] {
 
 .chart-tick {
     fill: var(--text-muted);
-    font-size: 10px;
+    font-size: 13px;
 }
 
 .chart-empty {
@@ -463,6 +463,34 @@ input[type="number"] {
 .chart-tc-marker {
     stroke: var(--baseline);
     stroke-width: 1;
+}
+
+.chart-fit-line {
+    stroke: var(--text-muted);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    margin-top: 0.4rem;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+
+.chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.chart-legend-swatch {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 2px;
+    display: inline-block;
 }
 
 .chart-x-label {
@@ -524,6 +552,41 @@ input[type="number"] {
 
 .explainer .katex-display {
     margin: 0;
+}
+
+/* ---------- data table ---------- */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table caption {
+    text-align: left;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.4rem 0.7rem;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+}
+
+.data-table th:first-child,
+.data-table td:first-child {
+    text-align: left;
+}
+
+.data-table th {
+    color: var(--text-muted);
+    font-weight: 600;
 }
 
 /* ---------- sweep page ---------- */
