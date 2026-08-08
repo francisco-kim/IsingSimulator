@@ -36,9 +36,16 @@ Console.Write("Please choose one of the above options: ");
 var choice = -1;
 while (choice is < 0 or > 8)
 {
+    var choiceLine = Console.ReadLine();
+    if (choiceLine is null)
+    {
+        Console.Error.WriteLine("\nNo input received (stdin closed). Exiting.");
+        return;
+    }
+
     try
     {
-        choice = Convert.ToInt32(Console.ReadLine());
+        choice = Convert.ToInt32(choiceLine);
     }
     catch
     {
@@ -50,7 +57,7 @@ while (choice is < 0 or > 8)
     {
         break;
     }
-    Console.SetCursorPosition(0, Console.CursorTop -1);
+    MoveCursorToLineStart();
     Console.Write(value: "Invalid option! Please choose one of the above options: ");
 }
 Console.WriteLine("\n");
@@ -65,7 +72,7 @@ if (choice is not 6 && choice is not 7 && choice is not 8)
     Console.Write(latticeLengthString);
     var latticeLengthInput = Console.ReadLine();
     latticeLength = latticeLengthInput is "" ? latticeLength : Convert.ToInt32(latticeLengthInput);
-    Console.SetCursorPosition(0, Console.CursorTop -1);
+    MoveCursorToLineStart();
     Console.Write(latticeLengthString + $"{latticeLength}\n");
 }
 
@@ -75,7 +82,7 @@ if (choice is 0 or 1 or 5 or 8)
     Console.Write(value: temperatureString);
     var temperatureInput = Console.ReadLine();
     boltzmannTemperature = temperatureInput is "" ? boltzmannTemperature : Convert.ToDouble(temperatureInput);
-    Console.SetCursorPosition(0, Console.CursorTop -1);
+    MoveCursorToLineStart();
     Console.Write(temperatureString + $"{boltzmannTemperature}\n");
 }
 
@@ -85,7 +92,7 @@ if (choice is 0 or 1 or 2 or 3 or 4)
     Console.Write(stringUpdateMethodString);
     var spinUpdateMethodInput = Console.ReadLine();
     spinUpdateMethod = spinUpdateMethodInput is "g" ? SpinUpdateMethod.Glauber : SpinUpdateMethod.Wolff;
-    Console.SetCursorPosition(0, Console.CursorTop -1);
+    MoveCursorToLineStart();
     Console.Write(stringUpdateMethodString + $"{spinUpdateMethod}\n");
 }
 
@@ -187,7 +194,7 @@ switch (choice)
         Console.Write(isCriticalRegionString);
         var isCriticalRegionInput = Console.ReadLine();
         var isCriticalRegion = isCriticalRegionInput is "y";
-        Console.SetCursorPosition(0, Console.CursorTop -1);
+        MoveCursorToLineStart();
         Console.Write(isCriticalRegionString + $"{isCriticalRegion}\n");
 
         var thermalisationStepsInMCSweepUnit = 100_000;
@@ -199,7 +206,7 @@ switch (choice)
                                                : Convert.ToInt32(thermalisationStepsInMCSweepUnitInput);
         if (thermalisationStepsInMCSweepUnitInput is "")
         {
-            Console.SetCursorPosition(0, Console.CursorTop -1);
+            MoveCursorToLineStart();
             Console.Write(thermalisationStepsString + $"{thermalisationStepsInMCSweepUnit}\n");
         }
 
@@ -344,7 +351,7 @@ switch (choice)
         var thermalisationStepsIn100MCSweepUnit = 1.0;
         if (thermalisationStepsIn100MCSweepsUnitInput is "")
         {
-            Console.SetCursorPosition(0, Console.CursorTop -1);
+            MoveCursorToLineStart();
             Console.Write(thermalisationStepsString + $"{thermalisationStepsIn100MCSweepUnit}\n");
         }
         else
@@ -414,4 +421,20 @@ static string getFilename(int givenLatticeLength, double boltzmannTemperature)
 
         return foundFilename;
     }
+}
+
+static void MoveCursorToLineStart()
+{
+    if (Console.IsOutputRedirected)
+    {
+        return;
+    }
+
+    var targetTop = Console.CursorTop - 1;
+    if (targetTop < 0)
+    {
+        return;
+    }
+
+    Console.SetCursorPosition(0, targetTop);
 }
