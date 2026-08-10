@@ -237,6 +237,19 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 1.1rem;
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    .controls {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+    }
 }
 
 .control-group {
